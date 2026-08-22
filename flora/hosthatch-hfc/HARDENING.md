@@ -63,7 +63,8 @@ the current state, verification method, and recovery path are understood.
 
 - [ ] Verify filesystem type, free space, mount behavior, and disk-health
   visibility; decide whether any storage changes are required.
-- [ ] Establish ownership, permissions, and mount expectations for
+- [x] Confirm `/var/data/flora` is the existing Flora data root.
+- [ ] Verify ownership, permissions, and mount expectations for
   `/var/data/flora`.
 - [ ] Create the initial data-area structure for immutable raw data, normalized
   Parquet, derived features, labels, temporary work, and logs.
@@ -74,7 +75,7 @@ the current state, verification method, and recovery path are understood.
 
 ## 5. Research host foundations
 
-- [ ] Verify the intended Flora source repository, remote, and `main` branch
+- [x] Verify the intended Flora source repository, remote, and `main` branch
   before installing or running project code.
 - [ ] Install only the runtime/build dependencies justified by the verified
   codebase and operating system.
