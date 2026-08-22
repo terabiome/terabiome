@@ -14,8 +14,8 @@ Tailscale auth keys in this file.
   firewall.
 - Verify a new access path before removing an old one.
 - Record deviations and post-change checks in `DECISIONS.md`.
-- Treat existing Flora data as evidence: do not delete, clean, or migrate it
-  until a verified copy and rollback path exist.
+- Treat existing local Flora data as rebuildable working state. Do not delete
+  or clean it until the R2 retrieval/rebuild path is verified.
 
 ## HFC-001: Baseline assessment
 
@@ -52,6 +52,10 @@ ip6tables -S
 NVMe class storage, UTC/NTP synchronized, no swap, and existing completed
 Flora output occupying roughly 60 GB under `/var/data/flora`. Do not assume a
 new instance has the same capacity or existing data.
+
+HFC local data is rebuildable working state. Raw processing inputs are pulled
+from the authoritative R2 source; do not introduce a second HFC-data backup
+pipeline unless that doctrine changes.
 
 ## HFC-002: Apply reviewed OS updates
 
@@ -212,6 +216,7 @@ temporary artifacts must be reviewed—not deleted—before any Git cleanup.
 - Record and test HostHatch console/recovery access.
 - Add and test non-root SSH-key access before disabling root SSH login.
 - Review Tailscale tailnet access policy before adding untrusted/shared devices.
-- Establish a verified off-host backup before changing existing Flora data.
-- Verify permissions, capacity, retention, and restore behavior for the
-  existing `/var/data/flora` layout.
+- Verify R2 retention/availability and test the HFC input retrieval/rebuild
+  path.
+- Verify permissions, capacity, and local-retention behavior for the existing
+  `/var/data/flora` layout.

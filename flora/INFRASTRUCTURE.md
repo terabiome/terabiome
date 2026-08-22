@@ -38,3 +38,6 @@ reboot model; do not assume mutable-host package-management workflows.
 
 Current market-data focus: CBOT Corn futures (ZC), using Databento
 `GLBX.MDP3` MBP-1 data.
+
+Authoritative raw vendor data is retained in R2. HFC local Flora data is
+rebuildable working state: the host pulls raw inputs from R2 before processing.

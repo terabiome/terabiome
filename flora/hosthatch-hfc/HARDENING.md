@@ -70,8 +70,9 @@ the current state, verification method, and recovery path are understood.
   Parquet, derived features, labels, temporary work, and logs.
 - [ ] Define write permissions so raw vendor data cannot be casually modified
   or deleted by routine research processes.
-- [ ] Define retention, capacity monitoring, backup, and restore requirements.
-- [ ] Test a small backup-and-restore path before relying on it.
+- [ ] Define local retention and capacity monitoring for rebuildable working
+  data.
+- [ ] Verify the R2 raw-data source and test the HFC rebuild path from it.
 
 ## 5. Research host foundations
 

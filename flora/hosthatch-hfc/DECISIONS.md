@@ -10,3 +10,4 @@ IP addresses, private keys, and host fingerprints out of this file.
 | 2026-08-22 | Access | HFC enrolled in the existing Tailscale tailnet. | Private SSH verified over the Tailscale address; preserve a recovery path before changing root SSH. |
 | 2026-08-22 | Firewall | UFW enabled with a default-deny inbound policy; Cockpit public access blocked. | Cockpit verified through Tailscale; no public Cockpit allow rule. Tailscale UDP transport may remain public by design. |
 | 2026-08-22 | Accounts | Created local `nnurry` sudo account for Cockpit and privilege elevation. | SSH remains key-only; account has no SSH key at this stage. |
+| 2026-08-23 | Data recovery | R2 is the authoritative raw-data store. HFC `/var/data/flora` is rebuildable local working state, not a backup source of record. | Recovery is HFC reprovisioning followed by input retrieval from R2. |
