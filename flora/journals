@@ -1,5 +1,6 @@
 # Journal logs for setting up Flora infrastructures
 ## Prepare base openSUSE Leap 16
+Follow homogeneous setup with same base OS for all machines, converging toward same state (wishful thinking, that's not gonna happen).
 ### Flash OS with Online installer
 - For local machine, use https://get.opensuse.org/leap/16.0/#download
 - For HostHatch VM, use "Upload ISO" and paste this link, then follow the same procedure like local: https://mirror.freedif.org/opensuse/distribution/leap/16.0/offline/Leap-16.0-online-installer-x86_64-Build178.27.install.iso
@@ -20,11 +21,13 @@ sudo systemctl enable --now tailscaled
 sudo tailscale up --auth-key=X-Key
 ```
 ### Disable SSH-via-password
-- SSH to node, add disable SSH-via-password config at path `/etc/ssh/sshd_config.d/disable-password.conf` 
+- SSH to node, add disable SSH-via-password config
 ```
+sudo tee /etc/ssh/sshd_config.d/disable-password.conf <<EOF
 PasswordAuthentication no
 ChallengeResponseAuthentication no
 UsePAM no
+EOF
 ```
 - Execute `sudo systemctl restart sshd`
 ### Setup Firewall rules
@@ -50,3 +53,28 @@ sudo firewall-cmd --permanent --zone=public --set-target=DROP
 sudo firewall-cmd --permanent --zone=public --add-service=cockpit
 ```
 - Apply rules with `sudo firewall-cmd --reload`
+### Disable swap
+- Comment out the swap entry in `/etc/fstab` to prevent enabling swap in after next reboot.
+- Check `sudo systemctl list-units --type=swap`, and mask the systemd unit
+```bash
+sudo systemctl mask <unit>.swap
+sudo swapoff -a
+sudo reboot
+```
+
+- Verify using `free -h` to see if swap = 0GB
+### Load kernel modules
+- Create a configuration file defining what to load for k8s-specific requirements
+```bash
+sudo tee /etc/modules-load.d/k8s.conf <<EOF
+overlay
+br_netfilter
+EOF
+```
+- Load config immediately
+```bash
+sudo modprobe overlay
+sudo modprobe br_netfilter
+```
+- Check with `sudo lsmod | grep "overlay|br_netfilter"`
+- (optional) Reboot
