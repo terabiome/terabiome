@@ -78,3 +78,17 @@ sudo modprobe br_netfilter
 ```
 - Check with `sudo lsmod | grep "overlay|br_netfilter"`
 - (optional) Reboot
+### Tune kernel parameters
+- Add these (who knows what they are about lol), then apply
+```bash
+sudo tee /etc/sysctl.d/k8s.conf <<EOF
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+sudo sysctl --system
+```
+- Verify
+```bash
+sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
+```
