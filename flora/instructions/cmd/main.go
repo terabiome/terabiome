@@ -14,6 +14,7 @@ import (
 
 	"github.com/terabiome/infrastructures/instructions/internal/executor"
 	"github.com/terabiome/infrastructures/instructions/internal/models"
+	"github.com/terabiome/infrastructures/instructions/internal/services"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -96,63 +97,28 @@ func processFlags(ctx context.Context, cliInput *CLIInput) error {
 
 	if cfgStruct.DebugPrintOnly {
 		var buf bytes.Buffer
-		if err = yaml.NewEncoder(&buf).Encode(cfgStruct); err != nil {
+		encoder := yaml.NewEncoder(&buf)
+		encoder.SetIndent(2)
+
+		if err = encoder.Encode(cfgStruct); err != nil {
 			return fmt.Errorf("failed to encode to YAML buffer: %w", err)
 		}
 		fmt.Fprintf(os.Stdout, "%s\n", buf.String())
 		return nil
 	}
 
-	// Barricade: read from Config and start figuring out next steps
-	return fmt.Errorf("config execution logic not supported as of now")
+	localShell := executor.NewLocalShell()
 
-	// TODO: add logic here (e.g. enable sshd systemd service, setup firewalld, ...)
-	// for now, club everything in main.go, and split later once having the right structure
+	// ----------
+	// --- OS ---
+	// ----------
+	osInsExecutioner := services.NewOSInstructionExecutioner(localShell, cfgStruct.OS)
+	if err = osInsExecutioner.Validate(); err != nil {
+		return fmt.Errorf("failed to validate config for OS instruction executioner: %w", err)
+	}
 
-	// ------------
-	// --- SSHD ---
-	// ------------
-	output = executor.NewLocalShell().Execute(ctx, &executor.Input{
-		Mode:       executor.ModeSync,
-		Stdout:     os.Stdout,
-		Stderr:     os.Stderr,
-		Executable: "systemctl",
-		Arguments: []string{
-			"enable", "--now",
-			"sshd",
-		},
-	})
-	if output.Done() && output.Error != nil {
-		return fmt.Errorf("failed to start sshd service: %w", output.Error)
-	}
-	// -----------------
-	// --- Tailscale ---
-	// -----------------
-	output = executor.NewLocalShell().Execute(ctx, &executor.Input{
-		Mode:       executor.ModeSync,
-		Stdout:     os.Stdout,
-		Stderr:     os.Stderr,
-		Executable: "zypper",
-		Arguments: []string{
-			"install", "-y",
-			"tailscale",
-		},
-	})
-	if output.Done() && output.Error != nil {
-		return fmt.Errorf("failed to install tailscale: %w", output.Error)
-	}
-	output = executor.NewLocalShell().Execute(ctx, &executor.Input{
-		Mode:       executor.ModeSync,
-		Stdout:     os.Stdout,
-		Stderr:     os.Stderr,
-		Executable: "systemctl",
-		Arguments: []string{
-			"enable", "--now",
-			"tailscaled",
-		},
-	})
-	if output.Done() && output.Error != nil {
-		return fmt.Errorf("failed to enable tailscaled: %w", output.Error)
+	if err = osInsExecutioner.Execute(ctx); err != nil {
+		return fmt.Errorf("failed to execute OS instructions: %w", err)
 	}
 
 	return nil

@@ -1,0 +1,12 @@
+package services
+
+import (
+	"context"
+
+	"github.com/terabiome/infrastructures/instructions/internal/executor"
+)
+
+type Executor interface {
+	Execute(ctx context.Context, input *executor.Input) executor.Output
+	Name() string
+}
