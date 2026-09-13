@@ -15,7 +15,7 @@ import (
 	"github.com/terabiome/infrastructures/instructions/internal/models"
 )
 
-type Flags struct {
+type CLIInput struct {
 	YAMLConfigPath string
 	bareCommand    struct {
 		executable string
@@ -23,7 +23,7 @@ type Flags struct {
 	}
 }
 
-func parse() (*Flags, error) {
+func parse() (*CLIInput, error) {
 	var tempAnchor struct {
 		yamlConfigPath *string
 		bareCommand    *string
@@ -33,7 +33,7 @@ func parse() (*Flags, error) {
 
 	// parse and check
 	flag.Parse()
-	flagStruct := Flags{}
+	cliInput := CLIInput{}
 
 	if tempAnchor.bareCommand != nil {
 		if flagVal := *tempAnchor.bareCommand; flagVal != "" {
@@ -42,7 +42,7 @@ func parse() (*Flags, error) {
 				return nil, errors.New("no segment in -bare-command")
 			}
 
-			flagStruct.bareCommand = struct {
+			cliInput.bareCommand = struct {
 				executable string
 				arguments  []string
 			}{
@@ -50,7 +50,7 @@ func parse() (*Flags, error) {
 				arguments:  segments[1:],
 			}
 			// short-circuit immediately
-			return &flagStruct, nil
+			return &cliInput, nil
 		}
 	}
 
@@ -59,25 +59,25 @@ func parse() (*Flags, error) {
 	} else if flagVal := *tempAnchor.yamlConfigPath; flagVal == "" {
 		return nil, errors.New("yaml-config-path is present but empty")
 	} else {
-		flagStruct.YAMLConfigPath = flagVal
+		cliInput.YAMLConfigPath = flagVal
 	}
 
-	return &flagStruct, nil
+	return &cliInput, nil
 }
 
-func processFlags(ctx context.Context, parsedFlags *Flags) error {
+func processFlags(ctx context.Context, cliInput *CLIInput) error {
 	var (
 		output executor.Output
 		err    error
 	)
 
-	if parsedFlags.bareCommand.executable != "" {
+	if cliInput.bareCommand.executable != "" {
 		output = executor.NewLocalShell().Execute(ctx, &executor.Input{
 			Mode:       executor.ModeSync,
 			Stdout:     os.Stdout,
 			Stderr:     os.Stderr,
-			Executable: parsedFlags.bareCommand.executable,
-			Arguments:  parsedFlags.bareCommand.arguments,
+			Executable: cliInput.bareCommand.executable,
+			Arguments:  cliInput.bareCommand.arguments,
 		})
 		output.Wait()
 		if output.Error != nil {
@@ -86,7 +86,7 @@ func processFlags(ctx context.Context, parsedFlags *Flags) error {
 		return nil
 	}
 
-	_, err = models.NewLoader().LoadConfigFromLocalPath(parsedFlags.YAMLConfigPath)
+	_, err = models.NewLoader().LoadConfigFromLocalPath(cliInput.YAMLConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load YAML config: %w", err)
 	}
@@ -148,7 +148,7 @@ func main() {
 		log.Fatalln("this script must be run as root/sudo")
 	}
 
-	parsedFlags, err := parse()
+	cliInput, err := parse()
 	if err != nil {
 		log.Fatalf("failed to parse argument flags: %v\n", err)
 	}
@@ -157,7 +157,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	if err = processFlags(ctx, parsedFlags); err != nil {
+	if err = processFlags(ctx, cliInput); err != nil {
 		log.Fatalf("failed to process input: %v\n", err)
 	}
 
