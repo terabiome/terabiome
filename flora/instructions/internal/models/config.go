@@ -19,10 +19,11 @@ const (
 
 // done
 type Config struct {
-	Shell   ShellConfig   `yaml:"shell"`
-	Network NetworkConfig `yaml:"network"`
-	Disk    DiskConfig    `yaml:"swap"`
-	Kernel  KernelConfig  `yaml:"kernel"`
+	DebugPrintOnly bool          `yaml:"debug_print_only"`
+	Shell          ShellConfig   `yaml:"shell"`
+	Network        NetworkConfig `yaml:"network"`
+	Disk           DiskConfig    `yaml:"swap"`
+	Kernel         KernelConfig  `yaml:"kernel"`
 }
 
 // done - both enable + disable appear -> conflict, throw error

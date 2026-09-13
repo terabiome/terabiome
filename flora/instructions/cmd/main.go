@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/terabiome/infrastructures/instructions/internal/executor"
 	"github.com/terabiome/infrastructures/instructions/internal/models"
+	"go.yaml.in/yaml/v4"
 )
 
 type CLIInput struct {
@@ -67,8 +69,9 @@ func parse() (*CLIInput, error) {
 
 func processFlags(ctx context.Context, cliInput *CLIInput) error {
 	var (
-		output executor.Output
-		err    error
+		cfgStruct *models.Config
+		output    executor.Output
+		err       error
 	)
 
 	if cliInput.bareCommand.executable != "" {
@@ -86,10 +89,22 @@ func processFlags(ctx context.Context, cliInput *CLIInput) error {
 		return nil
 	}
 
-	_, err = models.NewLoader().LoadConfigFromLocalPath(cliInput.YAMLConfigPath)
+	cfgStruct, err = models.NewLoader().LoadConfigFromLocalPath(cliInput.YAMLConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load YAML config: %w", err)
 	}
+
+	if cfgStruct.DebugPrintOnly {
+		var buf bytes.Buffer
+		if err = yaml.NewEncoder(&buf).Encode(cfgStruct); err != nil {
+			return fmt.Errorf("failed to encode to YAML buffer: %w", err)
+		}
+		fmt.Fprintf(os.Stdout, "%s\n", buf.String())
+		return nil
+	}
+
+	// Barricade: read from Config and start figuring out next steps
+	return fmt.Errorf("config execution logic not supported as of now")
 
 	// TODO: add logic here (e.g. enable sshd systemd service, setup firewalld, ...)
 	// for now, club everything in main.go, and split later once having the right structure
