@@ -97,7 +97,7 @@ func processFlags(ctx context.Context, parsedFlags *Flags) error {
 	// ------------
 	// --- SSHD ---
 	// ------------
-	input := executor.Input{
+	output = executor.NewLocalShell().Execute(ctx, &executor.Input{
 		Mode:       executor.ModeSync,
 		Stdout:     os.Stdout,
 		Stderr:     os.Stderr,
@@ -106,10 +106,38 @@ func processFlags(ctx context.Context, parsedFlags *Flags) error {
 			"enable", "--now",
 			"sshd",
 		},
-	}
-	output = executor.NewLocalShell().Execute(ctx, &input)
+	})
 	if output.Done() && output.Error != nil {
 		return fmt.Errorf("failed to start sshd service: %w", output.Error)
+	}
+	// -----------------
+	// --- Tailscale ---
+	// -----------------
+	output = executor.NewLocalShell().Execute(ctx, &executor.Input{
+		Mode:       executor.ModeSync,
+		Stdout:     os.Stdout,
+		Stderr:     os.Stderr,
+		Executable: "zypper",
+		Arguments: []string{
+			"install", "-y",
+			"tailscale",
+		},
+	})
+	if output.Done() && output.Error != nil {
+		return fmt.Errorf("failed to install tailscale: %w", output.Error)
+	}
+	output = executor.NewLocalShell().Execute(ctx, &executor.Input{
+		Mode:       executor.ModeSync,
+		Stdout:     os.Stdout,
+		Stderr:     os.Stderr,
+		Executable: "systemctl",
+		Arguments: []string{
+			"enable", "--now",
+			"tailscaled",
+		},
+	})
+	if output.Done() && output.Error != nil {
+		return fmt.Errorf("failed to enable tailscaled: %w", output.Error)
 	}
 
 	return nil
