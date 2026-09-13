@@ -19,7 +19,7 @@ const (
 
 // done
 type Config struct {
-	DebugPrintOnly bool          `yaml:"debug_print_only"`
+	DebugPrintOnly bool          `yaml:"debug_print_only,omitempty"`
 	Shell          ShellConfig   `yaml:"shell"`
 	Network        NetworkConfig `yaml:"network"`
 	Disk           DiskConfig    `yaml:"swap"`
@@ -28,8 +28,8 @@ type Config struct {
 
 // done - both enable + disable appear -> conflict, throw error
 type ShellConfig struct {
-	EnableService  bool `yaml:"enable_service"`
-	DisableService bool `yaml:"disable_service"`
+	EnableService  bool `yaml:"enable_service,omitempty"`
+	DisableService bool `yaml:"disable_service,omitempty"`
 	StartService   bool `yaml:"start_service"`
 }
 
@@ -42,16 +42,16 @@ type NetworkConfig struct {
 // done - both enable + disable appear -> conflict, throw error
 type TailscaleConfig struct {
 	InstallPackage bool   `yaml:"install_package"`
-	EnableService  bool   `yaml:"enable_service"`
-	DisableService bool   `yaml:"disable_service"`
+	EnableService  bool   `yaml:"enable_service,omitempty"`
+	DisableService bool   `yaml:"disable_service,omitempty"`
 	StartService   bool   `yaml:"start_service"`
 	AuthKey        string `yaml:"auth_key"`
 }
 
 // done - both enable + disable appear -> conflict, throw error
 type FirewallConfig struct {
-	EnableService  bool                  `yaml:"enable_service"`
-	DisableService bool                  `yaml:"disable_service"`
+	EnableService  bool                  `yaml:"enable_service,omitempty"`
+	DisableService bool                  `yaml:"disable_service,omitempty"`
 	Zones          map[string]ZoneConfig `yaml:"zones"`
 }
 
@@ -59,7 +59,7 @@ type FirewallConfig struct {
 type ZoneConfig struct {
 	Interface InterfaceConfig       `yaml:"interface"`
 	Services  []ServiceConfig       `yaml:"services"`
-	SetTarget firewalldTargetAction `yaml:"set_service"`
+	SetTarget firewalldTargetAction `yaml:"set_service,omitempty"`
 }
 
 // done
