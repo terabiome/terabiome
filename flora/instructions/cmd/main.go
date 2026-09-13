@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/terabiome/infrastructures/instructions/internal/executor"
@@ -16,17 +17,43 @@ import (
 
 type Flags struct {
 	YAMLConfigPath string
+	bareCommand    struct {
+		executable string
+		arguments  []string
+	}
 }
 
 func parse() (*Flags, error) {
 	var tempAnchor struct {
 		yamlConfigPath *string
+		bareCommand    *string
 	}
+	tempAnchor.bareCommand = flag.String("bare-command", "", "Only execute command and exit")
 	tempAnchor.yamlConfigPath = flag.String("yaml-config-path", "", "Path to YAML config path")
 
 	// parse and check
 	flag.Parse()
 	flagStruct := Flags{}
+
+	if tempAnchor.bareCommand != nil {
+		if flagVal := *tempAnchor.bareCommand; flagVal != "" {
+			segments := strings.Split(flagVal, " ")
+			if len(segments) == 0 {
+				return nil, errors.New("no segment in -bare-command")
+			}
+
+			flagStruct.bareCommand = struct {
+				executable string
+				arguments  []string
+			}{
+				executable: segments[0],
+				arguments:  segments[1:],
+			}
+			// short-circuit immediately
+			return &flagStruct, nil
+		}
+	}
+
 	if tempAnchor.yamlConfigPath == nil {
 		return nil, errors.New("missing yaml-config-path")
 	} else if flagVal := *tempAnchor.yamlConfigPath; flagVal == "" {
@@ -43,6 +70,22 @@ func processFlags(ctx context.Context, parsedFlags *Flags) error {
 		output executor.Output
 		err    error
 	)
+
+	if parsedFlags.bareCommand.executable != "" {
+		output = executor.NewLocalShell().Execute(ctx, &executor.Input{
+			Mode:       executor.ModeSync,
+			Stdout:     os.Stdout,
+			Stderr:     os.Stderr,
+			Executable: parsedFlags.bareCommand.executable,
+			Arguments:  parsedFlags.bareCommand.arguments,
+		})
+		output.Wait()
+		if output.Error != nil {
+			log.Fatalf("failed to execute bare command: %v", output.Error)
+		}
+		return nil
+	}
+
 	_, err = models.NewLoader().LoadConfigFromLocalPath(parsedFlags.YAMLConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load YAML config: %w", err)
