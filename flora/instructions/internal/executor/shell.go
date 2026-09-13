@@ -21,7 +21,7 @@ func (e *LocalShell) Name() string {
 	return "local-shell"
 }
 
-func (e *LocalShell) Execute(ctx context.Context, input Input) (Output, error) {
+func (e *LocalShell) Execute(ctx context.Context, input *Input) Output {
 	output := Output{}
 
 	cmdStr := input.CommandString()
@@ -31,16 +31,17 @@ func (e *LocalShell) Execute(ctx context.Context, input Input) (Output, error) {
 	cmd.Stdout = input.Stdout
 	cmd.Stderr = input.Stderr
 
-	output.Command = cmd
-
-	if err := e.execute(input, &output); err != nil {
-		return output, err
+	output, err := NewOutput(input.Mode, cmd)
+	if err != nil {
+		output.fail(err)
+		return output
 	}
 
-	return output, nil
+	e.execute(input, &output)
+	return output
 }
 
-func (e *LocalShell) execute(input Input, output *Output) error {
+func (e *LocalShell) execute(input *Input, output *Output) error {
 	cmd := output.Command
 
 	if input.Mode == ModeAsync {
@@ -55,7 +56,7 @@ func (e *LocalShell) execute(input Input, output *Output) error {
 	return e.handleResponse(input, output, cmd.Run())
 }
 
-func (e *LocalShell) handleResponse(input Input, output *Output, err error) error {
+func (e *LocalShell) handleResponse(input *Input, output *Output, err error) error {
 	cmdStr := input.CommandString()
 	if err == nil {
 		e.logger.Debug("command succeeded",
@@ -73,8 +74,9 @@ func (e *LocalShell) handleResponse(input Input, output *Output, err error) erro
 			slog.String("cmd", cmdStr),
 			slog.Int("exit_code", exitCode),
 		)
-		output.fail(err)
-		return fmt.Errorf("command exited with code %d: %w", exitCode, err)
+
+		output.fail(&CommandExitError{cmdStr, exitErr})
+		return output.Error
 	}
 
 	e.logger.Error("command execution error",
@@ -82,5 +84,6 @@ func (e *LocalShell) handleResponse(input Input, output *Output, err error) erro
 		slog.String("cmd", cmdStr),
 		slog.String("error", err.Error()),
 	)
-	return fmt.Errorf("command execution failed: %w", err)
+	output.fail(&CommandExecutionError{cmdStr, err})
+	return output.Error
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"go.yaml.in/yaml/v4"
@@ -10,15 +11,30 @@ import (
 type Config struct {
 }
 
-func (c *Config) LoadFromLocalPath(path string) error {
+type Loader struct {
+}
+
+func NewLoader(options ...any) *Loader {
+	loader := Loader{}
+
+	// can add extra parameter here
+	return &loader
+}
+
+func (l Loader) LoadConfigFromLocalPath(path string) (*Config, error) {
 	yamlReader, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("failed to read file at path '%s': %w", path, err)
+		return nil, fmt.Errorf("failed to read file at path '%s': %w", path, err)
 	}
 
-	if err = yaml.NewDecoder(yamlReader).Decode(&c); err != nil {
-		return fmt.Errorf("failed to parse decode file: %w", err)
+	cfgStruct := Config{}
+	if err = yaml.NewDecoder(yamlReader).Decode(&cfgStruct); err != nil {
+		// no problem
+		if err == io.EOF {
+			return &cfgStruct, nil
+		}
+		return nil, fmt.Errorf("failed to parse decode file: %w", err)
 	}
 
-	return nil
+	return &cfgStruct, nil
 }

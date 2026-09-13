@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/terabiome/infrastructures/instructions/internal/executor"
 	"github.com/terabiome/infrastructures/instructions/internal/models"
 )
 
@@ -15,27 +19,55 @@ type Flags struct {
 }
 
 func parse() (*Flags, error) {
-	flagStruct := Flags{}
+	var tempAnchor struct {
+		yamlConfigPath *string
+	}
+	tempAnchor.yamlConfigPath = flag.String("yaml-config-path", "", "Path to YAML config path")
 
-	// yaml-config-path
-	if flagVal := flag.String("yaml-config-path", "", "Path to YAML config path"); flagVal == nil {
+	// parse and check
+	flag.Parse()
+	flagStruct := Flags{}
+	if tempAnchor.yamlConfigPath == nil {
 		return nil, errors.New("missing yaml-config-path")
-	} else if *flagVal == "" {
+	} else if flagVal := *tempAnchor.yamlConfigPath; flagVal == "" {
 		return nil, errors.New("yaml-config-path is present but empty")
 	} else {
-		flagVal = &flagStruct.YAMLConfigPath
+		flagStruct.YAMLConfigPath = flagVal
 	}
 
 	return &flagStruct, nil
 }
 
-func processFlags(parsedFlags *Flags) error {
-	cfgStruct := models.Config{}
-	if err := cfgStruct.LoadFromLocalPath(parsedFlags.YAMLConfigPath); err != nil {
+func processFlags(ctx context.Context, parsedFlags *Flags) error {
+	var (
+		output executor.Output
+		err    error
+	)
+	_, err = models.NewLoader().LoadConfigFromLocalPath(parsedFlags.YAMLConfigPath)
+	if err != nil {
 		return fmt.Errorf("failed to load YAML config: %w", err)
 	}
 
 	// TODO: add logic here (e.g. enable sshd systemd service, setup firewalld, ...)
+	// for now, club everything in main.go, and split later once having the right structure
+
+	// ------------
+	// --- SSHD ---
+	// ------------
+	input := executor.Input{
+		Mode:       executor.ModeSync,
+		Stdout:     os.Stdout,
+		Stderr:     os.Stderr,
+		Executable: "systemctl",
+		Arguments: []string{
+			"enable", "--now",
+			"sshd",
+		},
+	}
+	output = executor.NewLocalShell().Execute(ctx, &input)
+	if output.Done() && output.Error != nil {
+		return fmt.Errorf("failed to start sshd service: %w", output.Error)
+	}
 
 	return nil
 }
@@ -50,7 +82,11 @@ func main() {
 		log.Fatalf("failed to parse argument flags: %v\n", err)
 	}
 
-	if err = processFlags(parsedFlags); err != nil {
+	// Ctrl + C or something to stop the command halfway
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	defer cancel()
+
+	if err = processFlags(ctx, parsedFlags); err != nil {
 		log.Fatalf("failed to process input: %v\n", err)
 	}
 
