@@ -20,6 +20,8 @@ func NewLoader(options ...any) *Loader {
 
 func (l Loader) LoadConfigFromLocalPath(path string) (*Config, error) {
 	yamlReader, err := os.Open(path)
+	defer yamlReader.Close()
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file at path '%s': %w", path, err)
 	}
