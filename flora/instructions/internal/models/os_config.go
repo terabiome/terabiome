@@ -69,6 +69,7 @@ func (cfg TailscaleConfig) SoftValidate() error {
 type FirewallConfig struct {
 	EnableService  bool                  `yaml:"enable_service,omitempty"`
 	DisableService bool                  `yaml:"disable_service,omitempty"`
+	Immediate      bool                  `yaml:"immediate"`
 	Zones          map[string]ZoneConfig `yaml:"zones"`
 }
 
