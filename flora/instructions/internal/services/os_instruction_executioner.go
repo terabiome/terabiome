@@ -316,44 +316,74 @@ func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) 
 	}
 
 	if swapCfg.EditFstab {
-		fstabFile, err := os.OpenFile("/etc/fstab", os.O_RDWR, 0o644)
+		content, err := os.ReadFile("/etc/fstab")
 		if err != nil {
-			return fmt.Errorf("failed to open /etc/fstab: %w", err)
+			return fmt.Errorf("failed to read /etc/fstab: %w", err)
 		}
-		defer fstabFile.Close()
-
-		scanner := bufio.NewScanner(fstabFile)
-
-		// note: can use fstabFile.Stat(),
-		// read the bytes, but this seems risky on /etc/fstab -> not doing it now
-		newContent := bytes.NewBuffer([]byte{})
-		for scanner.Scan() {
-			if scanner.Err() != nil {
-				return fmt.Errorf("failed to read new line from /etc/stab: %w", scanner.Err())
+		lines := strings.Split(string(content), "\n")
+		var modified []string
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+				modified = append(modified, line)
+				continue
 			}
-
-			line := scanner.Text()
-			if strings.Contains(line, "swap") {
-				// check if there is comment
-				if strings.Contains(line, "#") {
-					log.Printf("swap entry commented: '%s'\n", line)
-				} else {
-					newContent.WriteString("# ")
-				}
+			if strings.Contains(strings.ToLower(line), "swap") {
+				log.Printf("Commenting out swap entry: '%s'\n", line)
+				modified = append(modified, "# "+line)
+			} else {
+				modified = append(modified, line)
 			}
-
-			newContent.Write(scanner.Bytes())
-			newContent.WriteString("\n")
 		}
 
-		if _, err = fstabFile.Write(newContent.Bytes()); err != nil {
-			return fmt.Errorf("failed to write to /etc/fstab: %w", err)
+		if err := os.WriteFile("/etc/fstab", []byte(strings.Join(modified, "\n")), 0644); err != nil {
+			return fmt.Errorf("failed to write /etc/fstab: %w", err)
 		}
 	}
 
 	if swapCfg.MaskSwapRelatedServices {
 		// list the units
+		stdoutBuf := bytes.NewBuffer([]byte{})
+		output := e.executor.Execute(ctx, &executor.Input{
+			Mode:       executor.ModeSync,
+			Stdout:     stdoutBuf,
+			Stderr:     os.Stderr,
+			Executable: "systemctl",
+			Arguments:  []string{"list-units", "--type=swap", "--all", "--no-legend"},
+		})
+		if output.Done() && output.Error != nil {
+			return fmt.Errorf("failed to list swap units: %w", output.Error)
+		}
+
 		// mask them
+		var swapUnits []string
+		outputScanner := bufio.NewScanner(stdoutBuf)
+		for outputScanner.Scan() {
+			if outputScanner.Err() != nil {
+				return fmt.Errorf("failed to scan swap unit output: %w", outputScanner.Err())
+			}
+			fields := strings.Fields(outputScanner.Text())
+			if len(fields) == 0 {
+				continue
+			}
+			if !strings.HasSuffix(strings.ToLower(fields[0]), ".swap") {
+				continue
+			}
+			swapUnits = append(swapUnits, fields[0])
+		}
+		for _, swapUnit := range swapUnits {
+			log.Printf("Masking systemd unit %s\n", swapUnit)
+			output = e.executor.Execute(ctx, &executor.Input{
+				Mode:       executor.ModeSync,
+				Stdout:     stdoutBuf,
+				Stderr:     os.Stderr,
+				Executable: "systemctl",
+				Arguments:  []string{"mask", swapUnit},
+			})
+			if output.Done() && output.Error != nil {
+				return fmt.Errorf("failed to mask systemd swap unit %s: %w", swapUnit, output.Error)
+			}
+		}
 	}
 
 	return nil
