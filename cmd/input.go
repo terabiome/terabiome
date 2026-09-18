@@ -17,7 +17,7 @@ func NewCLIInput() *cliInput {
 	return &cliInput{}
 }
 
-func parse() (*cliInput, error) {
+func (i *cliInput) Parse() error {
 	var tempAnchor struct {
 		yamlConfigPath *string
 		bareCommand    *string
@@ -27,27 +27,26 @@ func parse() (*cliInput, error) {
 
 	// parse and check
 	flag.Parse()
-	cliInput := cliInput{}
 
 	if tempAnchor.bareCommand != nil {
 		if flagVal := *tempAnchor.bareCommand; flagVal != "" {
 			command, parseErr := models.NewCommandFromString(flagVal)
 			if parseErr != nil {
-				return nil, fmt.Errorf("failed to parse bare-command: %w", parseErr)
+				return fmt.Errorf("failed to parse bare-command: %w", parseErr)
 			}
-			cliInput.bareCommand = *command
+			i.bareCommand = *command
 			// short-circuit immediately
-			return &cliInput, nil
+			return nil
 		}
 	}
 
 	if tempAnchor.yamlConfigPath == nil {
-		return nil, errors.New("missing yaml-config-path")
+		return errors.New("missing yaml-config-path")
 	} else if flagVal := *tempAnchor.yamlConfigPath; flagVal == "" {
-		return nil, errors.New("yaml-config-path is present but empty")
+		return errors.New("yaml-config-path is present but empty")
 	} else {
-		cliInput.yamlConfigPath = flagVal
+		i.yamlConfigPath = flagVal
 	}
 
-	return &cliInput, nil
+	return nil
 }

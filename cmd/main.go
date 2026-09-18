@@ -75,8 +75,8 @@ func main() {
 		log.Fatalln("this script must be run as root/sudo")
 	}
 
-	cliInput, err := parse()
-	if err != nil {
+	cliInput := NewCLIInput()
+	if err := cliInput.Parse(); err != nil {
 		log.Fatalf("failed to parse argument flags: %v\n", err)
 	}
 
@@ -84,7 +84,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	if err = processFlags(ctx, cliInput); err != nil {
+	if err := processFlags(ctx, cliInput); err != nil {
 		log.Fatalf("failed to process input: %v\n", err)
 	}
 
