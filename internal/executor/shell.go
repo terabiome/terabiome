@@ -27,7 +27,7 @@ func (e *LocalShell) Execute(ctx context.Context, input *Input) Output {
 	cmdStr := input.CommandString()
 	e.logger.Debug("executing command locally", slog.String("cmd", cmdStr))
 
-	cmd := exec.CommandContext(ctx, input.Executable, input.Arguments...)
+	cmd := exec.CommandContext(ctx, input.Command.Executable, input.Command.Arguments...)
 	cmd.Stdout = input.Stdout
 	cmd.Stderr = input.Stderr
 

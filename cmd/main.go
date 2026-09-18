@@ -3,13 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/terabiome/infrastructures/internal/executor"
@@ -18,70 +15,19 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-type CLIInput struct {
-	YAMLConfigPath string
-	bareCommand    struct {
-		executable string
-		arguments  []string
-	}
-}
-
-func parse() (*CLIInput, error) {
-	var tempAnchor struct {
-		yamlConfigPath *string
-		bareCommand    *string
-	}
-	tempAnchor.bareCommand = flag.String("bare-command", "", "Only execute command and exit")
-	tempAnchor.yamlConfigPath = flag.String("yaml-config-path", "", "Path to YAML config path")
-
-	// parse and check
-	flag.Parse()
-	cliInput := CLIInput{}
-
-	if tempAnchor.bareCommand != nil {
-		if flagVal := *tempAnchor.bareCommand; flagVal != "" {
-			segments := strings.Split(flagVal, " ")
-			if len(segments) == 0 {
-				return nil, errors.New("no segment in -bare-command")
-			}
-
-			cliInput.bareCommand = struct {
-				executable string
-				arguments  []string
-			}{
-				executable: segments[0],
-				arguments:  segments[1:],
-			}
-			// short-circuit immediately
-			return &cliInput, nil
-		}
-	}
-
-	if tempAnchor.yamlConfigPath == nil {
-		return nil, errors.New("missing yaml-config-path")
-	} else if flagVal := *tempAnchor.yamlConfigPath; flagVal == "" {
-		return nil, errors.New("yaml-config-path is present but empty")
-	} else {
-		cliInput.YAMLConfigPath = flagVal
-	}
-
-	return &cliInput, nil
-}
-
-func processFlags(ctx context.Context, cliInput *CLIInput) error {
+func processFlags(ctx context.Context, cliInput *cliInput) error {
 	var (
 		cfgStruct *models.Config
 		output    executor.Output
 		err       error
 	)
 
-	if cliInput.bareCommand.executable != "" {
+	if cliInput.bareCommand.Executable != "" {
 		output = executor.NewLocalShell().Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: cliInput.bareCommand.executable,
-			Arguments:  cliInput.bareCommand.arguments,
+			Mode:    executor.ModeSync,
+			Stdout:  os.Stdout,
+			Stderr:  os.Stderr,
+			Command: cliInput.bareCommand,
 		})
 		output.Wait()
 		if output.Error != nil {
@@ -90,7 +36,7 @@ func processFlags(ctx context.Context, cliInput *CLIInput) error {
 		return nil
 	}
 
-	cfgStruct, err = models.NewLoader().LoadConfigFromLocalPath(cliInput.YAMLConfigPath)
+	cfgStruct, err = models.NewLoader().LoadConfigFromLocalPath(cliInput.yamlConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load YAML config: %w", err)
 	}

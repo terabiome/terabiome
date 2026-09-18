@@ -4,7 +4,8 @@ import (
 	"errors"
 	"io"
 	"os/exec"
-	"strings"
+
+	"github.com/terabiome/infrastructures/internal/models"
 )
 
 type execMode string
@@ -15,18 +16,14 @@ const (
 )
 
 type Input struct {
-	Mode       execMode
-	Stdout     io.Writer
-	Stderr     io.Writer
-	Executable string
-	Arguments  []string
+	Mode    execMode
+	Stdout  io.Writer
+	Stderr  io.Writer
+	Command models.Command
 }
 
 func (i Input) CommandString() string {
-	if len(i.Arguments) == 0 {
-		return i.Executable
-	}
-	return i.Executable + " " + strings.Join(i.Arguments, " ")
+	return i.Command.String()
 }
 
 type Output struct {

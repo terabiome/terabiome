@@ -60,18 +60,20 @@ func (e *osInstructionExecutioner) processShellInstructions(ctx context.Context)
 	// mutually exclusive
 	if shellCfg.DisableService || shellCfg.EnableService {
 		input := executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "systemctl",
-			Arguments:  []string{},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "systemctl",
+				Arguments:  []string{},
+			},
 		}
 		if shellCfg.DisableService {
-			input.Arguments = append(input.Arguments, "disable")
+			input.Command.Arguments = append(input.Command.Arguments, "disable")
 		} else {
-			input.Arguments = append(input.Arguments, "enable")
+			input.Command.Arguments = append(input.Command.Arguments, "enable")
 		}
-		input.Arguments = append(input.Arguments, "sshd")
+		input.Command.Arguments = append(input.Command.Arguments, "sshd")
 		output := e.executor.Execute(ctx, &input)
 
 		if output.Done() && output.Error != nil {
@@ -81,11 +83,13 @@ func (e *osInstructionExecutioner) processShellInstructions(ctx context.Context)
 
 	if shellCfg.StartService {
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "systemctl",
-			Arguments:  []string{"start", "sshd"},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "systemctl",
+				Arguments:  []string{"start", "sshd"},
+			},
 		})
 		if output.Done() && output.Error != nil {
 			return fmt.Errorf("failed to start sshd: %w", output.Error)
@@ -111,11 +115,13 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 
 	if tailscaleCfg.InstallPackage {
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "zypper",
-			Arguments:  []string{"install", "-y", "tailscale"},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "zypper",
+				Arguments:  []string{"install", "-y", "tailscale"},
+			},
 		})
 		if output.Done() && output.Error != nil {
 			return fmt.Errorf("failed to install tailscale: %w", output.Error)
@@ -125,18 +131,20 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 	// mutually exclusive
 	if tailscaleCfg.DisableService || tailscaleCfg.EnableService {
 		input := executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "systemctl",
-			Arguments:  []string{},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "systemctl",
+				Arguments:  []string{},
+			},
 		}
 		if tailscaleCfg.DisableService {
-			input.Arguments = append(input.Arguments, "disable")
+			input.Command.Arguments = append(input.Command.Arguments, "disable")
 		} else {
-			input.Arguments = append(input.Arguments, "enable")
+			input.Command.Arguments = append(input.Command.Arguments, "enable")
 		}
-		input.Arguments = append(input.Arguments, "tailscaled")
+		input.Command.Arguments = append(input.Command.Arguments, "tailscaled")
 		output := e.executor.Execute(ctx, &input)
 
 		if output.Done() && output.Error != nil {
@@ -146,11 +154,13 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 
 	if tailscaleCfg.StartService {
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "systemctl",
-			Arguments:  []string{"start", "tailscaled"},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "systemctl",
+				Arguments:  []string{"start", "tailscaled"},
+			},
 		})
 		if output.Done() && output.Error != nil {
 			return fmt.Errorf("failed to start tailscaled: %w", output.Error)
@@ -160,11 +170,13 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 	// missing auth-key -> do nothing
 	if tailscaleCfg.AuthKey != "" {
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "tailscale",
-			Arguments:  []string{"up", fmt.Sprintf("--auth-key=%s", tailscaleCfg.AuthKey)},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "tailscale",
+				Arguments:  []string{"up", fmt.Sprintf("--auth-key=%s", tailscaleCfg.AuthKey)},
+			},
 		})
 		if output.Done() && output.Error != nil {
 			return fmt.Errorf("failed to connect to tailscale network: %w", output.Error)
@@ -184,18 +196,20 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 	// mutually exclusive
 	if firewallCfg.DisableService || firewallCfg.EnableService {
 		input := executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "systemctl",
-			Arguments:  []string{},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "systemctl",
+				Arguments:  []string{},
+			},
 		}
 		if firewallCfg.DisableService {
-			input.Arguments = append(input.Arguments, "disable")
+			input.Command.Arguments = append(input.Command.Arguments, "disable")
 		} else {
-			input.Arguments = append(input.Arguments, "enable")
+			input.Command.Arguments = append(input.Command.Arguments, "enable")
 		}
-		input.Arguments = append(input.Arguments, "firewalld")
+		input.Command.Arguments = append(input.Command.Arguments, "firewalld")
 		output := e.executor.Execute(ctx, &input)
 
 		if output.Done() && output.Error != nil {
@@ -205,10 +219,12 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 
 	for zone, cfg := range firewallCfg.Zones {
 		input := executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "firewall-cmd",
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "firewall-cmd",
+			},
 		}
 
 		var (
@@ -226,7 +242,7 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 			return fmt.Errorf("not valid action on interface: %s", cfg.Interface.Action)
 		}
 		interfaceAction = fmt.Sprintf(interfaceAction, cfg.Interface.Name)
-		input.Arguments = []string{fmt.Sprintf("--zone=%s", zone), interfaceAction}
+		input.Command.Arguments = []string{fmt.Sprintf("--zone=%s", zone), interfaceAction}
 
 		output := e.executor.Execute(ctx, &input)
 		if output.Done() && output.Error != nil {
@@ -247,7 +263,7 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 				return fmt.Errorf("not valid action on service: %s", service.Action)
 			}
 			serviceAction = fmt.Sprintf(serviceAction, service.Name)
-			input.Arguments = []string{fmt.Sprintf("--zone=%s", zone), serviceAction}
+			input.Command.Arguments = []string{fmt.Sprintf("--zone=%s", zone), serviceAction}
 
 			output := e.executor.Execute(ctx, &input)
 			if output.Done() && output.Error != nil {
@@ -264,7 +280,7 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 		default:
 			return fmt.Errorf("not valid target to set: %s", cfg.SetTarget)
 		}
-		input.Arguments = []string{fmt.Sprintf("--zone=%s", zone), fmt.Sprintf("--set-target=%s", cfg.SetTarget)}
+		input.Command.Arguments = []string{fmt.Sprintf("--zone=%s", zone), fmt.Sprintf("--set-target=%s", cfg.SetTarget)}
 
 		output = e.executor.Execute(ctx, &input)
 		if output.Done() && output.Error != nil {
@@ -277,11 +293,13 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 
 	if firewallCfg.Immediate {
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "firewall-cmd",
-			Arguments:  []string{"--reload"},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "firewall-cmd",
+				Arguments:  []string{"--reload"},
+			},
 		})
 
 		if output.Done() && output.Error != nil {
@@ -304,11 +322,13 @@ func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) 
 	// disable swap
 	if swapCfg.DisableSwap {
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     os.Stdout,
-			Stderr:     os.Stderr,
-			Executable: "swapoff",
-			Arguments:  []string{"-a"},
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "swapoff",
+				Arguments:  []string{"-a"},
+			},
 		})
 		if output.Done() && output.Error != nil {
 			return fmt.Errorf("failed to run swapoff: %w", output.Error)
@@ -345,11 +365,13 @@ func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) 
 		// list the units
 		stdoutBuf := bytes.NewBuffer([]byte{})
 		output := e.executor.Execute(ctx, &executor.Input{
-			Mode:       executor.ModeSync,
-			Stdout:     stdoutBuf,
-			Stderr:     os.Stderr,
-			Executable: "systemctl",
-			Arguments:  []string{"list-units", "--type=swap", "--all", "--no-legend"},
+			Mode:   executor.ModeSync,
+			Stdout: stdoutBuf,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "systemctl",
+				Arguments:  []string{"list-units", "--type=swap", "--all", "--no-legend"},
+			},
 		})
 		if output.Done() && output.Error != nil {
 			return fmt.Errorf("failed to list swap units: %w", output.Error)
@@ -374,11 +396,13 @@ func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) 
 		for _, swapUnit := range swapUnits {
 			log.Printf("Masking systemd unit %s\n", swapUnit)
 			output = e.executor.Execute(ctx, &executor.Input{
-				Mode:       executor.ModeSync,
-				Stdout:     stdoutBuf,
-				Stderr:     os.Stderr,
-				Executable: "systemctl",
-				Arguments:  []string{"mask", swapUnit},
+				Mode:   executor.ModeSync,
+				Stdout: stdoutBuf,
+				Stderr: os.Stderr,
+				Command: models.Command{
+					Executable: "systemctl",
+					Arguments:  []string{"mask", swapUnit},
+				},
 			})
 			if output.Done() && output.Error != nil {
 				return fmt.Errorf("failed to mask systemd swap unit %s: %w", swapUnit, output.Error)
