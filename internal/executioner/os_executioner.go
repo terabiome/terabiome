@@ -1,4 +1,4 @@
-package services
+package executioner
 
 import (
 	"bufio"
@@ -14,51 +14,63 @@ import (
 	"github.com/terabiome/infrastructures/internal/models"
 )
 
-type osInstructionExecutioner struct {
-	executor Executor
-	cfg      models.OSConfig
+type osExecutioner struct {
+	// sub-executioners
+	shellExecutioner   shellExecutioner
+	networkExecutioner networkExecutioner
+	diskExecutioner    diskExecutioner
 }
 
-func NewOSInstructionExecutioner(executor Executor, cfg models.OSConfig) *osInstructionExecutioner {
-	return &osInstructionExecutioner{
-		executor: executor,
-		cfg:      cfg,
+func NewOSExecutioner(executor Executor, cfg models.OSConfig) *osExecutioner {
+	return &osExecutioner{
+		shellExecutioner:   shellExecutioner{cfg.Shell, executor},
+		networkExecutioner: networkExecutioner{cfg.Network, executor},
+		diskExecutioner:    diskExecutioner{cfg.Disk, executor},
 	}
 }
 
-func (e *osInstructionExecutioner) Execute(ctx context.Context) error {
-	if err := e.processShellInstructions(ctx); err != nil {
+func (e *osExecutioner) Execute(ctx context.Context) error {
+	if err := e.shellExecutioner.Process(ctx); err != nil {
 		return fmt.Errorf("failed to execute shell instructions: %w", err)
 	}
 
-	if err := e.processNetworkInstructions(ctx); err != nil {
+	if err := e.networkExecutioner.Process(ctx); err != nil {
 		return fmt.Errorf("failed to execute network instructions: %w", err)
 	}
 
-	if err := e.processDiskInstructions(ctx); err != nil {
+	if err := e.diskExecutioner.Process(ctx); err != nil {
 		return fmt.Errorf("failed to execute disk instructions: %w", err)
 	}
 
 	return nil
 }
 
-func (e *osInstructionExecutioner) Validate() error {
+func (e *osExecutioner) Validate() error {
 	return errors.Join(
-		e.cfg.Shell.SoftValidate(),
-		e.cfg.Network.Tailscale.SoftValidate(),
-		e.cfg.Network.Firewall.SoftValidate(),
+		e.shellExecutioner.Validate(),
+		e.networkExecutioner.Validate(),
+		e.diskExecutioner.Validate(),
 	)
 }
 
-func (e *osInstructionExecutioner) processShellInstructions(ctx context.Context) error {
-	shellCfg := e.cfg.Shell
+type shellExecutioner struct {
+	cfg      models.ShellConfig
+	executor Executor
+}
 
+func (e *shellExecutioner) Validate() error {
+	return errors.Join(
+		e.cfg.SoftValidate(),
+	)
+}
+
+func (e *shellExecutioner) Process(ctx context.Context) error {
 	// ------------
 	// --- SSHD ---
 	// ------------
 
 	// mutually exclusive
-	if shellCfg.DisableService || shellCfg.EnableService {
+	if e.cfg.DisableService || e.cfg.EnableService {
 		input := executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -68,7 +80,7 @@ func (e *osInstructionExecutioner) processShellInstructions(ctx context.Context)
 				Arguments:  []string{},
 			},
 		}
-		if shellCfg.DisableService {
+		if e.cfg.DisableService {
 			input.Command.Arguments = append(input.Command.Arguments, "disable")
 		} else {
 			input.Command.Arguments = append(input.Command.Arguments, "enable")
@@ -81,7 +93,7 @@ func (e *osInstructionExecutioner) processShellInstructions(ctx context.Context)
 		}
 	}
 
-	if shellCfg.StartService {
+	if e.cfg.StartService {
 		output := e.executor.Execute(ctx, &executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -99,21 +111,31 @@ func (e *osInstructionExecutioner) processShellInstructions(ctx context.Context)
 	return nil
 }
 
-func (e *osInstructionExecutioner) processNetworkInstructions(ctx context.Context) error {
+type networkExecutioner struct {
+	cfg      models.NetworkConfig
+	executor Executor
+}
+
+func (e *networkExecutioner) Validate() error {
 	return errors.Join(
-		e.processTailscaleInstructions(ctx),
-		e.processFirewallInstructions(ctx),
+		e.cfg.Tailscale.SoftValidate(),
+		e.cfg.Firewall.SoftValidate(),
 	)
 }
 
-func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Context) error {
+func (e *networkExecutioner) Process(ctx context.Context) error {
+	return errors.Join(
+		e.processTailscale(ctx),
+		e.processFirewall(ctx),
+	)
+}
+
+func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 	// -----------------
 	// --- Tailscale ---
 	// -----------------
 
-	tailscaleCfg := e.cfg.Network.Tailscale
-
-	if tailscaleCfg.InstallPackage {
+	if e.cfg.Tailscale.InstallPackage {
 		output := e.executor.Execute(ctx, &executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -129,7 +151,7 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 	}
 
 	// mutually exclusive
-	if tailscaleCfg.DisableService || tailscaleCfg.EnableService {
+	if e.cfg.Tailscale.DisableService || e.cfg.Tailscale.EnableService {
 		input := executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -139,7 +161,7 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 				Arguments:  []string{},
 			},
 		}
-		if tailscaleCfg.DisableService {
+		if e.cfg.Tailscale.DisableService {
 			input.Command.Arguments = append(input.Command.Arguments, "disable")
 		} else {
 			input.Command.Arguments = append(input.Command.Arguments, "enable")
@@ -152,7 +174,7 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 		}
 	}
 
-	if tailscaleCfg.StartService {
+	if e.cfg.Tailscale.StartService {
 		output := e.executor.Execute(ctx, &executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -168,14 +190,14 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 	}
 
 	// missing auth-key -> do nothing
-	if tailscaleCfg.AuthKey != "" {
+	if e.cfg.Tailscale.AuthKey != "" {
 		output := e.executor.Execute(ctx, &executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 			Command: models.Command{
 				Executable: "tailscale",
-				Arguments:  []string{"up", fmt.Sprintf("--auth-key=%s", tailscaleCfg.AuthKey)},
+				Arguments:  []string{"up", fmt.Sprintf("--auth-key=%s", e.cfg.Tailscale.AuthKey)},
 			},
 		})
 		if output.Done() && output.Error != nil {
@@ -186,15 +208,13 @@ func (e *osInstructionExecutioner) processTailscaleInstructions(ctx context.Cont
 	return nil
 }
 
-func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Context) error {
+func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 	// ----------------
 	// --- Firewall ---
 	// ----------------
 
-	firewallCfg := e.cfg.Network.Firewall
-
 	// mutually exclusive
-	if firewallCfg.DisableService || firewallCfg.EnableService {
+	if e.cfg.Firewall.DisableService || e.cfg.Firewall.EnableService {
 		input := executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -204,7 +224,7 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 				Arguments:  []string{},
 			},
 		}
-		if firewallCfg.DisableService {
+		if e.cfg.Firewall.DisableService {
 			input.Command.Arguments = append(input.Command.Arguments, "disable")
 		} else {
 			input.Command.Arguments = append(input.Command.Arguments, "enable")
@@ -217,7 +237,7 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 		}
 	}
 
-	for zone, cfg := range firewallCfg.Zones {
+	for zone, cfg := range e.cfg.Firewall.Zones {
 		input := executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -291,7 +311,7 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 		}
 	}
 
-	if firewallCfg.Immediate {
+	if e.cfg.Firewall.Immediate {
 		output := e.executor.Execute(ctx, &executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -310,17 +330,24 @@ func (e *osInstructionExecutioner) processFirewallInstructions(ctx context.Conte
 	return nil
 }
 
-func (e *osInstructionExecutioner) processDiskInstructions(ctx context.Context) error {
+type diskExecutioner struct {
+	cfg      models.DiskConfig
+	executor Executor
+}
+
+func (e *diskExecutioner) Validate() error {
+	return nil
+}
+
+func (e *diskExecutioner) Process(ctx context.Context) error {
 	return errors.Join(
-		e.processSwapInstructions(ctx),
+		e.processSwap(ctx),
 	)
 }
 
-func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) error {
-	swapCfg := e.cfg.Disk.Swap
-
+func (e *diskExecutioner) processSwap(ctx context.Context) error {
 	// disable swap
-	if swapCfg.DisableSwap {
+	if e.cfg.Swap.DisableSwap {
 		output := e.executor.Execute(ctx, &executor.Input{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
@@ -335,7 +362,7 @@ func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) 
 		}
 	}
 
-	if swapCfg.EditFstab {
+	if e.cfg.Swap.EditFstab {
 		content, err := os.ReadFile("/etc/fstab")
 		if err != nil {
 			return fmt.Errorf("failed to read /etc/fstab: %w", err)
@@ -361,7 +388,7 @@ func (e *osInstructionExecutioner) processSwapInstructions(ctx context.Context) 
 		}
 	}
 
-	if swapCfg.MaskSwapRelatedServices {
+	if e.cfg.Swap.MaskSwapRelatedServices {
 		// list the units
 		stdoutBuf := bytes.NewBuffer([]byte{})
 		output := e.executor.Execute(ctx, &executor.Input{

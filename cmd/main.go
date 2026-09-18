@@ -9,9 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/terabiome/infrastructures/internal/executioner"
 	"github.com/terabiome/infrastructures/internal/executor"
 	"github.com/terabiome/infrastructures/internal/models"
-	"github.com/terabiome/infrastructures/internal/services"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -58,7 +58,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 	// ----------
 	// --- OS ---
 	// ----------
-	osInsExecutioner := services.NewOSInstructionExecutioner(localShell, cfgStruct.OS)
+	osInsExecutioner := executioner.NewOSExecutioner(localShell, cfgStruct.OS)
 	if err = osInsExecutioner.Validate(); err != nil {
 		return fmt.Errorf("failed to validate config for OS instruction executioner: %w", err)
 	}
