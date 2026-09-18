@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/terabiome/infrastructures/instructions/internal/executor"
-	"github.com/terabiome/infrastructures/instructions/internal/models"
+	"github.com/terabiome/infrastructures/internal/executor"
+	"github.com/terabiome/infrastructures/internal/models"
 )
 
 type osInstructionExecutioner struct {

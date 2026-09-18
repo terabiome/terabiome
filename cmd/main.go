@@ -12,9 +12,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/terabiome/infrastructures/instructions/internal/executor"
-	"github.com/terabiome/infrastructures/instructions/internal/models"
-	"github.com/terabiome/infrastructures/instructions/internal/services"
+	"github.com/terabiome/infrastructures/internal/executor"
+	"github.com/terabiome/infrastructures/internal/models"
+	"github.com/terabiome/infrastructures/internal/services"
 	"go.yaml.in/yaml/v4"
 )
 

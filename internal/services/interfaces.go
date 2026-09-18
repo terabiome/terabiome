@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/terabiome/infrastructures/instructions/internal/executor"
+	"github.com/terabiome/infrastructures/internal/executor"
 )
 
 type Executor interface {
