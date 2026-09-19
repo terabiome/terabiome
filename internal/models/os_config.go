@@ -132,6 +132,20 @@ type KernelConfig struct {
 	SystemKernelParameters SystemKernelParametersConfig `yaml:"system_kernel_parameters"`
 }
 
+/*
+Can refactor Kernel config to this and make things easier. Low priority though.
+  kernel:
+    kernel_modules:
+      immediate: true
+      mappings:
+        - path: /etc/modules-load.d/k8s.conf
+          values:
+            - value: br_netfilter
+              action: add
+            - value: overlay
+              action: add
+*/
+
 // done
 type KernelModulesConfig struct {
 	Immediate bool                 `yaml:"immediate"`
