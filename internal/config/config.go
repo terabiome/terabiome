@@ -1,5 +1,15 @@
 package config
 
+import (
+	"log"
+	"os"
+	"strconv"
+)
+
+type envable interface {
+	int | string | bool
+}
+
 type Config struct {
 	Logger LoggerConfig
 }
@@ -7,7 +17,9 @@ type Config struct {
 var cfg *Config
 
 func New() *Config {
-	cfg := Config{}
+	cfg := Config{
+		Logger: NewLoggerConfig(),
+	}
 	return &cfg
 }
 
@@ -17,4 +29,32 @@ func Get() *Config {
 	}
 
 	return cfg
+}
+
+// can log fatal here
+func loadEnv[T envable](key string, required bool) T {
+	value, exist := os.LookupEnv(key)
+	if !exist && required {
+		log.Fatalf("failed to load %s: not exist\n", key)
+	}
+
+	var anchor T
+	switch anchorPtr := any(&anchor).(type) {
+	case *string:
+		*anchorPtr = value
+	case *int:
+		intVal, err := strconv.Atoi(value)
+		if err != nil {
+			log.Fatalf("failed to load %s: failed to cast to int: %v\n", err)
+		}
+		*anchorPtr = intVal
+	case *bool:
+		boolVal, err := strconv.ParseBool(value)
+		if err != nil {
+			log.Fatalf("failed to load %s: failed to cast to bool: %v\n", err)
+		}
+		*anchorPtr = boolVal
+	}
+
+	return anchor
 }
