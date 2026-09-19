@@ -182,37 +182,143 @@ func (e *kernelExecutioner) processKernelModules(ctx context.Context) error {
 }
 
 func (e *kernelExecutioner) processSystemKernelParameters(ctx context.Context) error {
-	// if len(e.cfg.SystemKernelParameters.Values) == 0 {
-	// 	return nil
-	// }
+	if len(e.cfg.SystemKernelParameters.Values) == 0 {
+		return nil
+	}
 
-	// sysctlParams := map[string]string{
-	// 	"net.bridge.bridge-nf-call-iptables":  "1",
-	// 	"net.bridge.bridge-nf-call-ip6tables": "1",
-	// 	"net.ipv4.ip_forward":                 "1",
-	// }
-	// var lines []string
-	// for k, v := range sysctlParams {
-	// 	lines = append(lines, fmt.Sprintf("%s = %s", k, v))
-	// }
-	// if err := os.WriteFile("/etc/sysctl.d/k8s.conf", []byte(strings.Join(lines, "\n")+"\n"), 0644); err != nil {
-	// 	return fmt.Errorf("write /etc/sysctl.d/k8s.conf: %w", err)
-	// }
+	type invertSysctlEntry struct {
+		key    string
+		value  string
+		action models.SystemKernelParameterAction
+	}
 
-	// if e.cfg.SystemKernelParameters.Immediate {
-	// 	output := e.executor.Execute(ctx, &executor.Input{
-	// 		Mode:   executor.ModeSync,
-	// 		Stdout: os.Stdout,
-	// 		Stderr: os.Stderr,
-	// 		Command: models.Command{
-	// 			Executable: "sysctl",
-	// 			Arguments:  []string{"--system"},
-	// 		},
-	// 	})
-	// 	if output.Done() && output.Error != nil {
-	// 		return fmt.Errorf("sysctl --system: %w", output.Error)
-	// 	}
-	// }
+	var (
+		invertedFileEntryLookupMap = map[string][]invertSysctlEntry{}
+		invertedFileParamMap       = map[string]map[string]string{}
+		faultyEntries              = map[string]struct{}{}
+		seenKeys                   = map[string]struct{}{}
+	)
+
+	const (
+		sysctlDir                      = "/etc/sysctl.d"
+		filePermissionBits os.FileMode = 0o644
+	)
+
+	// Validate and deduplicate entries
+	for _, value := range e.cfg.SystemKernelParameters.Values {
+		value.Key = strings.TrimSpace(value.Key)
+		value.Value = strings.TrimSpace(value.Value)
+
+		// Basic validation of sysctl key format (e.g., net.ipv4.ip_forward)
+		validKeyPattern := regexp.MustCompile(`^[a-z][a-z0-9_.]+$`)
+		if !validKeyPattern.MatchString(value.Key) {
+			faultyEntries[value.Key] = struct{}{}
+			continue
+		}
+
+		lookupKey := fmt.Sprintf("file:%s-key:%s", value.FilePath, value.Key)
+		if _, ok := seenKeys[lookupKey]; ok {
+			faultyEntries[lookupKey] = struct{}{}
+			continue
+		}
+		seenKeys[lookupKey] = struct{}{}
+
+		if _, ok := invertedFileEntryLookupMap[value.FilePath]; !ok {
+			invertedFileEntryLookupMap[value.FilePath] = []invertSysctlEntry{}
+		}
+		invertedFileEntryLookupMap[value.FilePath] = append(
+			invertedFileEntryLookupMap[value.FilePath],
+			invertSysctlEntry{value.Key, value.Value, value.Action},
+		)
+	}
+
+	if len(faultyEntries) > 0 {
+		return fmt.Errorf(
+			"encountered %d faulty sysctl entries in config: %v",
+			len(faultyEntries), slices.Collect(maps.Keys(faultyEntries)),
+		)
+	}
+
+	// Validate file paths match expected pattern
+	filePathPattern := regexp.MustCompile(fmt.Sprintf(`%s/[a-zA-Z0-9_-]+\.conf$`, sysctlDir))
+	for filePath := range invertedFileEntryLookupMap {
+		if filePathPattern.FindString(filePath) == "" {
+			return fmt.Errorf("sysctl file path does not match expected pattern %s: %s",
+				filePathPattern.String(), filePath)
+		}
+	}
+
+	// Stage all changes in memory before writing
+	for filePath, invertEntries := range invertedFileEntryLookupMap {
+		paramMap := map[string]string{}
+
+		// Read existing file if it exists
+		byteContent, err := os.ReadFile(filePath)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to read sysctl file %s: %w", filePath, err)
+		}
+		if err == nil {
+			for line := range strings.SplitSeq(string(byteContent), "\n") {
+				trimmed := strings.TrimSpace(line)
+				if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+					continue
+				}
+				parts := strings.SplitN(trimmed, "=", 2)
+				if len(parts) == 2 {
+					paramMap[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+				}
+			}
+		}
+
+		// Apply staged changes
+		for _, entry := range invertEntries {
+			switch entry.action {
+			case models.SystemKernelParameterActionAdd:
+				paramMap[entry.key] = entry.value
+			case models.SystemKernelParameterActionRemove:
+				delete(paramMap, entry.key)
+			default:
+				e.logger.WarnContext(ctx, "invalid action for sysctl param",
+					"key", entry.key,
+					"file_path", filePath,
+					"action", entry.action,
+				)
+			}
+		}
+
+		invertedFileParamMap[filePath] = paramMap
+	}
+
+	// Atomic write all files
+	for filePath, params := range invertedFileParamMap {
+		var lines []string
+		// Sort keys for deterministic output
+		sortedKeys := slices.Sorted(maps.Keys(params))
+		for _, key := range sortedKeys {
+			lines = append(lines, fmt.Sprintf("%s = %s", key, params[key]))
+		}
+
+		content := strings.Join(lines, "\n") + "\n"
+		if err := os.WriteFile(filePath, []byte(content), filePermissionBits); err != nil {
+			return fmt.Errorf("failed to write sysctl params to %s: %w", filePath, err)
+		}
+	}
+
+	// Apply immediately if configured
+	if e.cfg.SystemKernelParameters.Immediate {
+		output := e.executor.Execute(ctx, &executor.Input{
+			Mode:   executor.ModeSync,
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Command: models.Command{
+				Executable: "sysctl",
+				Arguments:  []string{"--system"},
+			},
+		})
+		if output.Done() && output.Error != nil {
+			return fmt.Errorf("sysctl --system: %w", output.Error)
+		}
+	}
 
 	return nil
 }
