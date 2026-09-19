@@ -14,7 +14,7 @@ import (
 	"github.com/terabiome/infrastructures/internal/executor"
 	"github.com/terabiome/infrastructures/internal/models"
 	"github.com/terabiome/infrastructures/internal/singletons"
-	"github.com/terabiome/infrastructures/pkg/logger"
+	"github.com/terabiome/infrastructures/pkg/logging"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -25,7 +25,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 		err       error
 	)
 
-	cliLogger := logger.New(config.Get().Logger, map[string]any{
+	cliLogger := logging.New(config.Get().Logger, map[string]any{
 		"scope": "cli",
 	})
 

@@ -1,15 +1,6 @@
-package executioner
+package executor
 
-import (
-	"context"
-
-	"github.com/terabiome/infrastructures/internal/executor"
-)
-
-type Executor interface {
-	Execute(ctx context.Context, input *executor.Input) executor.Output
-	Name() string
-}
+import "context"
 
 type Logger interface {
 	Debug(msg string, args ...any)

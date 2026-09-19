@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/terabiome/infrastructures/internal/config"
-	"github.com/terabiome/infrastructures/pkg/logger"
+	"github.com/terabiome/infrastructures/pkg/logging"
 )
 
 type Singletons struct {
@@ -15,12 +15,12 @@ var sings *Singletons
 func Init() {
 	log.Println("Constructing singletons")
 
-	logger.InitGlobalLogger(config.Get().Logger)
+	logging.InitGlobalLogger(config.Get().Logger)
 
 	sings = &Singletons{}
 	// showing off
 
-	logger.Get().Info("Constructed singletons")
+	logging.Get().Info("Constructed singletons")
 }
 
 func Get() *Singletons {

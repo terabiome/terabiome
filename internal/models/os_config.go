@@ -2,21 +2,35 @@ package models
 
 import "errors"
 
-type firewalldTargetAction string
+type FirewalldTargetAction string
 
 const (
-	FirewalldTargetActionDrop    firewalldTargetAction = "DROP"
-	FirewalldTargetActionReject  firewalldTargetAction = "REJECT"
-	FirewalldTargetActionAccept  firewalldTargetAction = "ACCEPT"
-	FirewalldTargetActionUnknown firewalldTargetAction = ""
+	FirewalldTargetActionDrop    FirewalldTargetAction = "DROP"
+	FirewalldTargetActionReject  FirewalldTargetAction = "REJECT"
+	FirewalldTargetActionAccept  FirewalldTargetAction = "ACCEPT"
+	FirewalldTargetActionUnknown FirewalldTargetAction = ""
 )
 
-type firewalldZoneEntityAction string
+type FirewalldZoneEntityAction string
 
 const (
-	FirewalldZoneEntityActionAdd     firewalldZoneEntityAction = "add"
-	FirewalldZoneEntityActionRemove  firewalldZoneEntityAction = "remove"
-	FirewalldZoneEntityActionUnknown firewalldZoneEntityAction = ""
+	FirewalldZoneEntityActionAdd     FirewalldZoneEntityAction = "add"
+	FirewalldZoneEntityActionRemove  FirewalldZoneEntityAction = "remove"
+	FirewalldZoneEntityActionUnknown FirewalldZoneEntityAction = ""
+)
+
+type KernelModuleAction string
+
+const (
+	KernelModuleActionAdd    KernelModuleAction = "add"
+	KernelModuleActionRemove KernelModuleAction = "remove"
+)
+
+type SystemKernelParameterAction string
+
+const (
+	SystemKernelParameterActionAdd    SystemKernelParameterAction = "add"
+	SystemKernelParameterActionRemove SystemKernelParameterAction = "remove"
 )
 
 // done
@@ -85,19 +99,19 @@ func (cfg FirewallConfig) SoftValidate() error {
 type ZoneConfig struct {
 	Interface InterfaceConfig       `yaml:"interface"`
 	Services  []ServiceConfig       `yaml:"services"`
-	SetTarget firewalldTargetAction `yaml:"set_service,omitempty"`
+	SetTarget FirewalldTargetAction `yaml:"set_service,omitempty"`
 }
 
 // done
 type InterfaceConfig struct {
 	Name   string                    `yaml:"name"`
-	Action firewalldZoneEntityAction `yaml:"action,omitempty"`
+	Action FirewalldZoneEntityAction `yaml:"action,omitempty"`
 }
 
 // done
 type ServiceConfig struct {
 	Name   string                    `yaml:"name"`
-	Action firewalldZoneEntityAction `yaml:"action,omitempty"`
+	Action FirewalldZoneEntityAction `yaml:"action,omitempty"`
 }
 
 // done
@@ -126,9 +140,9 @@ type KernelModulesConfig struct {
 
 // done
 type KernelModuleConfig struct {
-	FilePath string `yaml:"path"` // e.g. /etc/modules-load.d/*.conf
-	Upsert   bool   `yaml:"upsert"`
-	Value    string `yaml:"value"`
+	FilePath string             `yaml:"path"` // e.g. /etc/modules-load.d/*.conf
+	Action   KernelModuleAction `yaml:"action"`
+	Value    string             `yaml:"value"`
 }
 
 // done
@@ -139,8 +153,8 @@ type SystemKernelParametersConfig struct {
 
 // done
 type SystemKernelParameterConfig struct {
-	FilePath string `yaml:"path"` // e.g. /etc/sysctl.d/*.conf
-	Upsert   bool   `yaml:"upsert"`
-	Key      string `yaml:"key"`
-	Value    string `yaml:"value"`
+	FilePath string                      `yaml:"path"` // e.g. /etc/sysctl.d/*.conf
+	Action   SystemKernelParameterAction `yaml:"action"`
+	Key      string                      `yaml:"key"`
+	Value    string                      `yaml:"value"`
 }
