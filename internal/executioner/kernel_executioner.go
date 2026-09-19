@@ -96,11 +96,11 @@ func (e *kernelExecutioner) processKernelModules(ctx context.Context) error {
 		isFileAlreadyExist, inspectFileErr := func(filePath string) (bool, error) {
 			_, err := os.Stat(filePath)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					return false, nil
+				}
 				// something terrible, could not inspect the file -> fail
 				return false, fmt.Errorf("failed to inspect file stat: %w", err)
-			}
-			if errors.Is(err, os.ErrNotExist) {
-				return false, nil
 			}
 			return true, nil
 		}(filePath)
