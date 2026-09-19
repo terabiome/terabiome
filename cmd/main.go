@@ -9,10 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/terabiome/infrastructures/internal/config"
 	"github.com/terabiome/infrastructures/internal/executioner"
 	"github.com/terabiome/infrastructures/internal/executor"
 	"github.com/terabiome/infrastructures/internal/models"
 	"github.com/terabiome/infrastructures/internal/singletons"
+	"github.com/terabiome/infrastructures/pkg/logger"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -23,8 +25,12 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 		err       error
 	)
 
+	cliLogger := logger.New(config.Get().Logger, map[string]any{
+		"scope": "cli",
+	})
+
 	if cliInput.bareCommand.Executable != "" {
-		output = executor.NewLocalShell(singletons.Get().Logger()).Execute(ctx, &executor.Input{
+		output = executor.NewLocalShell(cliLogger).Execute(ctx, &executor.Input{
 			Mode:    executor.ModeSync,
 			Stdout:  os.Stdout,
 			Stderr:  os.Stderr,
@@ -54,7 +60,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 		return nil
 	}
 
-	localShell := executor.NewLocalShell(singletons.Get().Logger())
+	localShell := executor.NewLocalShell(cliLogger)
 
 	// ----------
 	// --- OS ---

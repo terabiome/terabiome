@@ -13,7 +13,9 @@ type Logger struct {
 	*slog.Logger
 }
 
-func New(cfg config.LoggerConfig) *Logger {
+var globalLogger *Logger
+
+func New(cfg config.LoggerConfig, attributes map[string]any) *Logger {
 	var logLevel slog.Level
 
 	switch strings.ToLower(cfg.Level) {
@@ -42,16 +44,25 @@ func New(cfg config.LoggerConfig) *Logger {
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
+	slogger := slog.New(handler)
+	for k, v := range attributes {
+		slogger = slogger.With(
+			slog.Any(k, v),
+		)
+	}
+
 	return &Logger{
 		cfg:    cfg,
-		Logger: slog.New(handler),
+		Logger: slogger,
 	}
 }
 
-func NewWithComponent(cfg config.LoggerConfig) *Logger {
-	logger := New(cfg)
-	logger.Logger = logger.Logger.With(
-		slog.String("component", cfg.Component),
-	)
-	return logger
+func InitGlobalLogger(cfg config.LoggerConfig) {
+	globalLogger = New(cfg, map[string]any{
+		"scope": "global",
+	})
+}
+
+func Get() *Logger {
+	return globalLogger
 }
