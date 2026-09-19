@@ -12,6 +12,7 @@ import (
 	"github.com/terabiome/infrastructures/internal/executioner"
 	"github.com/terabiome/infrastructures/internal/executor"
 	"github.com/terabiome/infrastructures/internal/models"
+	"github.com/terabiome/infrastructures/internal/singletons"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -23,7 +24,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 	)
 
 	if cliInput.bareCommand.Executable != "" {
-		output = executor.NewLocalShell().Execute(ctx, &executor.Input{
+		output = executor.NewLocalShell(singletons.Get().Logger()).Execute(ctx, &executor.Input{
 			Mode:    executor.ModeSync,
 			Stdout:  os.Stdout,
 			Stderr:  os.Stderr,
@@ -53,7 +54,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 		return nil
 	}
 
-	localShell := executor.NewLocalShell()
+	localShell := executor.NewLocalShell(singletons.Get().Logger())
 
 	// ----------
 	// --- OS ---
@@ -79,6 +80,9 @@ func main() {
 	if err := cliInput.Parse(); err != nil {
 		log.Fatalf("failed to parse argument flags: %v\n", err)
 	}
+
+	// injectable dependencies live here
+	singletons.Init()
 
 	// Ctrl + C or something to stop the command halfway
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)

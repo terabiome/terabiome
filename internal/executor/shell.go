@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
+
+	"github.com/terabiome/infrastructures/pkg/logger"
 )
 
 type LocalShell struct {
-	logger *slog.Logger
+	logger *logger.Logger
 }
 
-func NewLocalShell() *LocalShell {
+func NewLocalShell(logger *logger.Logger) *LocalShell {
 	return &LocalShell{
-		logger: slog.Default(),
+		logger: logger,
 	}
 }
 
