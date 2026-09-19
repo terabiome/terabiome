@@ -210,7 +210,7 @@ func (e *kernelExecutioner) processSystemKernelParameters(ctx context.Context) e
 		value.Value = strings.TrimSpace(value.Value)
 
 		// Basic validation of sysctl key format (e.g., net.ipv4.ip_forward)
-		validKeyPattern := regexp.MustCompile(`^[a-z][a-z0-9_.]+$`)
+		validKeyPattern := regexp.MustCompile(`^[a-z][a-z0-9_.-]+$`)
 		if !validKeyPattern.MatchString(value.Key) {
 			faultyEntries[value.Key] = struct{}{}
 			continue
