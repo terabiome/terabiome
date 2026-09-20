@@ -12,7 +12,7 @@ import (
 
 type networkExecutioner struct {
 	cfg      models.NetworkConfig
-	executor Executor
+	executor CommandExecutor
 	logger   Logger
 }
 
@@ -36,7 +36,7 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 	// -----------------
 
 	if e.cfg.Tailscale.InstallPackage {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -52,7 +52,7 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 
 	// mutually exclusive
 	if e.cfg.Tailscale.DisableService || e.cfg.Tailscale.EnableService {
-		input := executor.Input{
+		input := executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -75,7 +75,7 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 	}
 
 	if e.cfg.Tailscale.StartService {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -91,7 +91,7 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 
 	// missing auth-key -> do nothing
 	if e.cfg.Tailscale.AuthKey != "" {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -115,7 +115,7 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 
 	// mutually exclusive
 	if e.cfg.Firewall.DisableService || e.cfg.Firewall.EnableService {
-		input := executor.Input{
+		input := executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -138,7 +138,7 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 	}
 
 	for zone, cfg := range e.cfg.Firewall.Zones {
-		input := executor.Input{
+		input := executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -212,7 +212,7 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 	}
 
 	if e.cfg.Firewall.Immediate {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,

@@ -16,7 +16,7 @@ import (
 
 type kernelExecutioner struct {
 	cfg      models.KernelConfig
-	executor Executor
+	executor CommandExecutor
 	logger   Logger
 }
 
@@ -157,7 +157,7 @@ func (e *kernelExecutioner) processKernelModules(ctx context.Context) error {
 
 		if e.cfg.KernelModules.Immediate {
 			// activate
-			input := executor.Input{
+			input := executor.CommandInput{
 				Mode:   executor.ModeSync,
 				Stdout: os.Stdout,
 				Stderr: os.Stderr,
@@ -306,7 +306,7 @@ func (e *kernelExecutioner) processSystemKernelParameters(ctx context.Context) e
 
 	// Apply immediately if configured
 	if e.cfg.SystemKernelParameters.Immediate {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,

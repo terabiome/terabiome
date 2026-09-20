@@ -6,8 +6,8 @@ import (
 	"github.com/terabiome/infrastructures/internal/executor"
 )
 
-type Executor interface {
-	Execute(ctx context.Context, input *executor.Input) executor.Output
+type CommandExecutor interface {
+	Execute(ctx context.Context, input *executor.CommandInput) executor.CommandOutput
 	Name() string
 }
 

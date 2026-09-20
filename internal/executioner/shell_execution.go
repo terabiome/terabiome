@@ -12,7 +12,7 @@ import (
 
 type shellExecutioner struct {
 	cfg      models.ShellConfig
-	executor Executor
+	executor CommandExecutor
 	logger   Logger
 }
 
@@ -29,7 +29,7 @@ func (e *shellExecutioner) Process(ctx context.Context) error {
 
 	// mutually exclusive
 	if e.cfg.DisableService || e.cfg.EnableService {
-		input := executor.Input{
+		input := executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -52,7 +52,7 @@ func (e *shellExecutioner) Process(ctx context.Context) error {
 	}
 
 	if e.cfg.StartService {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,

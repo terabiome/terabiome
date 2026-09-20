@@ -17,7 +17,7 @@ import (
 
 type diskExecutioner struct {
 	cfg      models.DiskConfig
-	executor Executor
+	executor CommandExecutor
 	logger   Logger
 }
 
@@ -34,7 +34,7 @@ func (e *diskExecutioner) Process(ctx context.Context) error {
 func (e *diskExecutioner) processSwap(ctx context.Context) error {
 	// disable swap
 	if e.cfg.Swap.DisableSwap {
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
@@ -77,7 +77,7 @@ func (e *diskExecutioner) processSwap(ctx context.Context) error {
 	if e.cfg.Swap.MaskSwapRelatedServices {
 		// list the units
 		stdoutBuf := bytes.NewBuffer([]byte{})
-		output := e.executor.Execute(ctx, &executor.Input{
+		output := e.executor.Execute(ctx, &executor.CommandInput{
 			Mode:   executor.ModeSync,
 			Stdout: stdoutBuf,
 			Stderr: os.Stderr,
@@ -108,7 +108,7 @@ func (e *diskExecutioner) processSwap(ctx context.Context) error {
 		}
 		for _, swapUnit := range swapUnits {
 			log.Printf("Masking systemd unit %s\n", swapUnit)
-			output = e.executor.Execute(ctx, &executor.Input{
+			output = e.executor.Execute(ctx, &executor.CommandInput{
 				Mode:   executor.ModeSync,
 				Stdout: io.Discard, // idc
 				Stderr: os.Stderr,

@@ -18,7 +18,7 @@ type osExecutioner struct {
 	kernelExecutioner  kernelExecutioner
 }
 
-func NewOSExecutioner(executor Executor, cfg models.OSConfig) *osExecutioner {
+func NewOSExecutioner(executor CommandExecutor, cfg models.OSConfig) *osExecutioner {
 	logger := logging.New(config.Get().Logger, map[string]any{
 		"scope": "executioner",
 	})

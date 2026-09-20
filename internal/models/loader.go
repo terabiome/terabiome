@@ -20,18 +20,13 @@ func NewLoader(options ...any) *Loader {
 
 func (l Loader) LoadConfigFromLocalPath(path string) (*Config, error) {
 	yamlReader, err := os.Open(path)
-	defer yamlReader.Close()
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file at path '%s': %w", path, err)
 	}
+	defer yamlReader.Close()
 
 	cfgStruct := Config{}
-	if err = yaml.NewDecoder(yamlReader).Decode(&cfgStruct); err != nil {
-		// no problem
-		if err == io.EOF {
-			return &cfgStruct, nil
-		}
+	if err = yaml.NewDecoder(yamlReader).Decode(&cfgStruct); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("failed to parse decode file: %w", err)
 	}
 

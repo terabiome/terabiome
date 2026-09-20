@@ -15,18 +15,18 @@ const (
 	ModeAsync execMode = "async"
 )
 
-type Input struct {
+type CommandInput struct {
 	Mode    execMode
 	Stdout  io.Writer
 	Stderr  io.Writer
 	Command models.Command
 }
 
-func (i Input) CommandString() string {
+func (i CommandInput) CommandString() string {
 	return i.Command.String()
 }
 
-type Output struct {
+type CommandOutput struct {
 	mode execMode
 
 	Command *exec.Cmd
@@ -37,36 +37,36 @@ type Output struct {
 	Error  error
 }
 
-func NewOutput(mode execMode, cmd *exec.Cmd) (Output, error) {
+func NewOutput(mode execMode, cmd *exec.Cmd) (CommandOutput, error) {
 	if cmd == nil {
-		return Output{}, errors.New("command is nil")
+		return CommandOutput{}, errors.New("command is nil")
 	}
-	return Output{
+	return CommandOutput{
 		mode:    mode,
 		Command: cmd,
 		done:    make(chan struct{}, 1),
 	}, nil
 }
 
-func (o Output) IsAsync() bool {
+func (o CommandOutput) IsAsync() bool {
 	return o.mode == ModeAsync
 }
 
-func (o Output) Done() bool {
+func (o CommandOutput) Done() bool {
 	return len(o.done) != 0
 }
 
-func (o *Output) Wait() {
+func (o *CommandOutput) Wait() {
 	<-o.done
 }
 
-func (o *Output) fail(err error) {
+func (o *CommandOutput) fail(err error) {
 	o.done <- struct{}{}
 	o.Signal = -1
 	o.Error = err
 }
 
-func (o *Output) complete() {
+func (o *CommandOutput) complete() {
 	o.done <- struct{}{}
 	o.Signal = 0
 }

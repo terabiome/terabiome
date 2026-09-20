@@ -7,22 +7,22 @@ import (
 	"os/exec"
 )
 
-type LocalShell struct {
+type CommandExecutor struct {
 	logger Logger
 }
 
-func NewLocalShell(logger Logger) *LocalShell {
-	return &LocalShell{
+func NewCommandExecutor(logger Logger) *CommandExecutor {
+	return &CommandExecutor{
 		logger: logger,
 	}
 }
 
-func (e *LocalShell) Name() string {
-	return "local-shell"
+func (e *CommandExecutor) Name() string {
+	return "command-executor"
 }
 
-func (e *LocalShell) Execute(ctx context.Context, input *Input) Output {
-	output := Output{}
+func (e *CommandExecutor) Execute(ctx context.Context, input *CommandInput) CommandOutput {
+	output := CommandOutput{}
 
 	cmdStr := input.CommandString()
 	e.logger.Debug("executing command locally", slog.String("cmd", cmdStr))
@@ -41,7 +41,7 @@ func (e *LocalShell) Execute(ctx context.Context, input *Input) Output {
 	return output
 }
 
-func (e *LocalShell) execute(input *Input, output *Output) error {
+func (e *CommandExecutor) execute(input *CommandInput, output *CommandOutput) error {
 	cmd := output.Command
 
 	if input.Mode == ModeAsync {
@@ -56,7 +56,7 @@ func (e *LocalShell) execute(input *Input, output *Output) error {
 	return e.handleResponse(input, output, cmd.Run())
 }
 
-func (e *LocalShell) handleResponse(input *Input, output *Output, err error) error {
+func (e *CommandExecutor) handleResponse(input *CommandInput, output *CommandOutput, err error) error {
 	cmdStr := input.CommandString()
 	if err == nil {
 		e.logger.Debug("command succeeded",

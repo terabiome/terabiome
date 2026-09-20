@@ -21,7 +21,7 @@ import (
 func processFlags(ctx context.Context, cliInput *cliInput) error {
 	var (
 		cfgStruct *models.Config
-		output    executor.Output
+		output    executor.CommandOutput
 		err       error
 	)
 
@@ -30,7 +30,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 	})
 
 	if cliInput.bareCommand.Executable != "" {
-		output = executor.NewLocalShell(cliLogger).Execute(ctx, &executor.Input{
+		output = executor.NewCommandExecutor(cliLogger).Execute(ctx, &executor.CommandInput{
 			Mode:    executor.ModeSync,
 			Stdout:  os.Stdout,
 			Stderr:  os.Stderr,
@@ -60,7 +60,7 @@ func processFlags(ctx context.Context, cliInput *cliInput) error {
 		return nil
 	}
 
-	localShell := executor.NewLocalShell(cliLogger)
+	localShell := executor.NewCommandExecutor(cliLogger)
 
 	// ----------
 	// --- OS ---
