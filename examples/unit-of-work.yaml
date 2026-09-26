@@ -1,0 +1,20 @@
+name: bootstrap-control-plane
+type: workflow  # "workflow" = one-shot execution. No reconciliation.
+sequences:
+  # Independent - run in parallel
+  # Dependent - flattened into a single master chain
+  - name: network-hardening
+    steps:
+      - name: configure_firewalld_zones
+      - name: apply_sysctl_hardening
+
+  - name: hardware-checks
+    steps:
+      - name: verify_cpu_flags
+
+  - name: k8s-installation
+    depends_on: ["network-hardening", "hardware-checks"]
+    steps:
+      - name: install_k3s_binary
+        params:
+          version: v1.29.0+k3s1
