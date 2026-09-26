@@ -1,12 +1,16 @@
-package handlers
+package handlershttp
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/terabiome/infrastructures/internal/contracts"
 	"go.yaml.in/yaml/v4"
 )
+
+var globalValidator = validator.New()
 
 type ContentType string
 
@@ -29,6 +33,7 @@ type responseCallback func()
 func ParseBodyAndHandleError(writer http.ResponseWriter, request *http.Request, target any, requireBody bool) (responseCallback, error) {
 	var err error
 	if requireBody {
+		// decode and check
 		acceptType := request.Header.Get("Accept")
 		switch acceptType {
 		case string(ContentTypeJSON):
@@ -37,6 +42,10 @@ func ParseBodyAndHandleError(writer http.ResponseWriter, request *http.Request, 
 			err = yaml.NewDecoder(request.Body).Decode(target)
 		default:
 			err = fmt.Errorf("unsupported HTTP header Accept: %s", acceptType)
+		}
+		// read validator tag
+		if v, ok := target.(contracts.Validatable); err == nil && ok {
+			err = v.Validate(globalValidator)
 		}
 		if err != nil {
 			return func() {
