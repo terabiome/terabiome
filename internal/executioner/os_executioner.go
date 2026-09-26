@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/terabiome/infrastructures/internal/config"
-	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
-	"github.com/terabiome/infrastructures/pkg/logging"
+	"github.com/terabiome/terabiome/internal/config"
+	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
+	"github.com/terabiome/terabiome/pkg/logging"
 )
 
 type osExecutioner struct {

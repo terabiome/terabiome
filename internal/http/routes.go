@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	handlershttp "github.com/terabiome/infrastructures/internal/http/handlers"
+	handlershttp "github.com/terabiome/terabiome/internal/http/handlers"
 )
 
 // Router wraps http.ServeMux and provides route setup

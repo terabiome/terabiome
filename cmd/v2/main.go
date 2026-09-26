@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/terabiome/infrastructures/internal/singletons"
+	"github.com/terabiome/terabiome/internal/singletons"
 )
 
 type cliInput struct {

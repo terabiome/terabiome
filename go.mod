@@ -1,4 +1,4 @@
-module github.com/terabiome/infrastructures
+module github.com/terabiome/terabiome
 
 go 1.27.1
 

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/terabiome/infrastructures/internal/config"
+	"github.com/terabiome/terabiome/internal/config"
 )
 
 type Logger struct {

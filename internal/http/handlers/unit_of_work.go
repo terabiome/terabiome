@@ -3,7 +3,7 @@ package handlershttp
 import (
 	"net/http"
 
-	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
+	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
 )
 
 type UnitOfWork struct {

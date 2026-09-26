@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/terabiome/infrastructures/internal/contracts"
+	"github.com/terabiome/terabiome/internal/contracts"
 	"go.yaml.in/yaml/v4"
 )
 

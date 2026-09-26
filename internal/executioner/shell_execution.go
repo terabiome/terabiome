@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
-	shellexecutors "github.com/terabiome/infrastructures/internal/executors/shell"
+	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
+	shellexecutors "github.com/terabiome/terabiome/internal/executors/shell"
 )
 
 type shellExecutioner struct {
