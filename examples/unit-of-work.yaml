@@ -1,4 +1,10 @@
 name: bootstrap-control-plane
+# planner reads this and looks up the matching topic
+# nuance: for each target, create an instance of UOW, not using the same for all (heartful duplication)
+# edge: target not found -> immediate failure, do not emit to topic at all cost
+# * means ignore the rest and dispatch to shared * topic (each consumer watches its topic and shared topic)
+target:
+  - *
 type: workflow  # "workflow" = one-shot execution. No reconciliation.
 sequences:
   # Independent - run in parallel
