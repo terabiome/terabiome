@@ -21,6 +21,7 @@ type osExecutioner struct {
 func NewOSExecutioner(executor CommandExecutor, cfg models.OSConfig) *osExecutioner {
 	logger := logging.New(config.Get().Logger, map[string]any{
 		"scope": "executioner",
+		"name":  "os",
 	})
 	return &osExecutioner{
 		shellExecutioner:   shellExecutioner{cfg.Shell, executor, logger},
