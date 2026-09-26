@@ -1,4 +1,4 @@
-package models
+package yamlcontracts
 
 import "go.yaml.in/yaml/v4"
 

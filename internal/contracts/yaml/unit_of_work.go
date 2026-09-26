@@ -1,4 +1,4 @@
-package contracts
+package yamlcontracts
 
 type UnitOfWorkType string
 

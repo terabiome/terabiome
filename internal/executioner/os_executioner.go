@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/terabiome/infrastructures/internal/config"
-	"github.com/terabiome/infrastructures/internal/models"
+	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
 	"github.com/terabiome/infrastructures/pkg/logging"
 )
 
@@ -18,7 +18,7 @@ type osExecutioner struct {
 	kernelExecutioner  kernelExecutioner
 }
 
-func NewOSExecutioner(executor CommandExecutor, cfg models.OSConfig) *osExecutioner {
+func NewOSExecutioner(executor CommandExecutor, cfg yamlcontracts.OSConfig) *osExecutioner {
 	logger := logging.New(config.Get().Logger, map[string]any{
 		"scope": "executioner",
 		"name":  "os",

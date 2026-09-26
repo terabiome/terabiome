@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/terabiome/infrastructures/internal/executor"
-	"github.com/terabiome/infrastructures/internal/models"
+	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
+	shellexecutors "github.com/terabiome/infrastructures/internal/executors/shell"
 )
 
 type shellExecutioner struct {
-	cfg      models.ShellConfig
+	cfg      yamlcontracts.ShellConfig
 	executor CommandExecutor
 	logger   Logger
 }
@@ -29,11 +29,11 @@ func (e *shellExecutioner) Process(ctx context.Context) error {
 
 	// mutually exclusive
 	if e.cfg.DisableService || e.cfg.EnableService {
-		input := executor.CommandInput{
-			Mode:   executor.ModeSync,
+		input := shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "systemctl",
 				Arguments:  []string{},
 			},
@@ -52,11 +52,11 @@ func (e *shellExecutioner) Process(ctx context.Context) error {
 	}
 
 	if e.cfg.StartService {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "systemctl",
 				Arguments:  []string{"start", "sshd"},
 			},

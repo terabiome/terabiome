@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/terabiome/infrastructures/internal/executor"
-	"github.com/terabiome/infrastructures/internal/models"
+	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
+	shellexecutors "github.com/terabiome/infrastructures/internal/executors/shell"
 )
 
 type networkExecutioner struct {
-	cfg      models.NetworkConfig
+	cfg      yamlcontracts.NetworkConfig
 	executor CommandExecutor
 	logger   Logger
 }
@@ -36,11 +36,11 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 	// -----------------
 
 	if e.cfg.Tailscale.InstallPackage {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "zypper",
 				Arguments:  []string{"install", "-y", "tailscale"},
 			},
@@ -52,11 +52,11 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 
 	// mutually exclusive
 	if e.cfg.Tailscale.DisableService || e.cfg.Tailscale.EnableService {
-		input := executor.CommandInput{
-			Mode:   executor.ModeSync,
+		input := shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "systemctl",
 				Arguments:  []string{},
 			},
@@ -75,11 +75,11 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 	}
 
 	if e.cfg.Tailscale.StartService {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "systemctl",
 				Arguments:  []string{"start", "tailscaled"},
 			},
@@ -91,11 +91,11 @@ func (e *networkExecutioner) processTailscale(ctx context.Context) error {
 
 	// missing auth-key -> do nothing
 	if e.cfg.Tailscale.AuthKey != "" {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "tailscale",
 				Arguments:  []string{"up", fmt.Sprintf("--auth-key=%s", e.cfg.Tailscale.AuthKey)},
 			},
@@ -115,11 +115,11 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 
 	// mutually exclusive
 	if e.cfg.Firewall.DisableService || e.cfg.Firewall.EnableService {
-		input := executor.CommandInput{
-			Mode:   executor.ModeSync,
+		input := shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "systemctl",
 				Arguments:  []string{},
 			},
@@ -138,11 +138,11 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 	}
 
 	for zone, cfg := range e.cfg.Firewall.Zones {
-		input := executor.CommandInput{
-			Mode:   executor.ModeSync,
+		input := shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "firewall-cmd",
 			},
 		}
@@ -154,9 +154,9 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 
 		// interface
 		switch cfg.Interface.Action {
-		case models.FirewalldZoneEntityActionAdd:
+		case yamlcontracts.FirewalldZoneEntityActionAdd:
 			interfaceAction = "--add-interface=%s"
-		case models.FirewalldZoneEntityActionRemove:
+		case yamlcontracts.FirewalldZoneEntityActionRemove:
 			interfaceAction = "--remove-interface=%s"
 		default:
 			return fmt.Errorf("not valid action on interface: %s", cfg.Interface.Action)
@@ -175,9 +175,9 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 		// services
 		for _, service := range cfg.Services {
 			switch service.Action {
-			case models.FirewalldZoneEntityActionAdd:
+			case yamlcontracts.FirewalldZoneEntityActionAdd:
 				serviceAction = "--add-service=%s"
-			case models.FirewalldZoneEntityActionRemove:
+			case yamlcontracts.FirewalldZoneEntityActionRemove:
 				serviceAction = "--remove-service=%s"
 			default:
 				return fmt.Errorf("not valid action on service: %s", service.Action)
@@ -196,7 +196,7 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 
 		// target
 		switch cfg.SetTarget {
-		case models.FirewalldTargetActionAccept, models.FirewalldTargetActionDrop, models.FirewalldTargetActionReject:
+		case yamlcontracts.FirewalldTargetActionAccept, yamlcontracts.FirewalldTargetActionDrop, yamlcontracts.FirewalldTargetActionReject:
 		default:
 			return fmt.Errorf("not valid target to set: %s", cfg.SetTarget)
 		}
@@ -212,11 +212,11 @@ func (e *networkExecutioner) processFirewall(ctx context.Context) error {
 	}
 
 	if e.cfg.Firewall.Immediate {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "firewall-cmd",
 				Arguments:  []string{"--reload"},
 			},

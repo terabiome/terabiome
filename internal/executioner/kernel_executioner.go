@@ -10,12 +10,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/terabiome/infrastructures/internal/executor"
-	"github.com/terabiome/infrastructures/internal/models"
+	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
+	shellexecutors "github.com/terabiome/infrastructures/internal/executors/shell"
 )
 
 type kernelExecutioner struct {
-	cfg      models.KernelConfig
+	cfg      yamlcontracts.KernelConfig
 	executor CommandExecutor
 	logger   Logger
 }
@@ -38,7 +38,7 @@ func (e *kernelExecutioner) processKernelModules(ctx context.Context) error {
 
 	type invertFileEntry struct {
 		value  string
-		action models.KernelModuleAction
+		action yamlcontracts.KernelModuleAction
 	}
 
 	var (
@@ -131,10 +131,10 @@ func (e *kernelExecutioner) processKernelModules(ctx context.Context) error {
 
 		for _, invertEntry := range invertEntries {
 			switch invertEntry.action {
-			case models.KernelModuleActionAdd:
+			case yamlcontracts.KernelModuleActionAdd:
 				// allow overwriting since value is bare string, not KV
 				moduleMap[invertEntry.value] = struct{}{}
-			case models.KernelModuleActionRemove:
+			case yamlcontracts.KernelModuleActionRemove:
 				// if exist in map -> remove
 				delete(moduleMap, invertEntry.value)
 			default:
@@ -157,11 +157,11 @@ func (e *kernelExecutioner) processKernelModules(ctx context.Context) error {
 
 		if e.cfg.KernelModules.Immediate {
 			// activate
-			input := executor.CommandInput{
-				Mode:   executor.ModeSync,
+			input := shellexecutors.CommandInput{
+				Mode:   shellexecutors.ModeSync,
 				Stdout: os.Stdout,
 				Stderr: os.Stderr,
-				Command: models.Command{
+				Command: shellexecutors.Command{
 					Executable: "modprobe",
 					Arguments:  []string{"-a"},
 				},
@@ -189,7 +189,7 @@ func (e *kernelExecutioner) processSystemKernelParameters(ctx context.Context) e
 	type invertSysctlEntry struct {
 		key    string
 		value  string
-		action models.SystemKernelParameterAction
+		action yamlcontracts.SystemKernelParameterAction
 	}
 
 	var (
@@ -273,9 +273,9 @@ func (e *kernelExecutioner) processSystemKernelParameters(ctx context.Context) e
 		// Apply staged changes
 		for _, entry := range invertEntries {
 			switch entry.action {
-			case models.SystemKernelParameterActionAdd:
+			case yamlcontracts.SystemKernelParameterActionAdd:
 				paramMap[entry.key] = entry.value
-			case models.SystemKernelParameterActionRemove:
+			case yamlcontracts.SystemKernelParameterActionRemove:
 				delete(paramMap, entry.key)
 			default:
 				e.logger.WarnContext(ctx, "invalid action for sysctl param",
@@ -306,11 +306,11 @@ func (e *kernelExecutioner) processSystemKernelParameters(ctx context.Context) e
 
 	// Apply immediately if configured
 	if e.cfg.SystemKernelParameters.Immediate {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "sysctl",
 				Arguments:  []string{"--system"},
 			},

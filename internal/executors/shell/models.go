@@ -1,11 +1,10 @@
-package executor
+package shellexecutors
 
 import (
 	"errors"
 	"io"
 	"os/exec"
-
-	"github.com/terabiome/infrastructures/internal/models"
+	"strings"
 )
 
 type execMode string
@@ -19,11 +18,23 @@ type CommandInput struct {
 	Mode    execMode
 	Stdout  io.Writer
 	Stderr  io.Writer
-	Command models.Command
+	Command Command
 }
 
 func (i CommandInput) CommandString() string {
 	return i.Command.String()
+}
+
+type Command struct {
+	Executable string
+	Arguments  []string
+}
+
+func (c Command) String() string {
+	if len(c.Arguments) == 0 {
+		return c.Executable
+	}
+	return c.Executable + " " + strings.Join(c.Arguments, " ")
 }
 
 type CommandOutput struct {

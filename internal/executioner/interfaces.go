@@ -3,11 +3,11 @@ package executioner
 import (
 	"context"
 
-	"github.com/terabiome/infrastructures/internal/executor"
+	shellexecutors "github.com/terabiome/infrastructures/internal/executors/shell"
 )
 
 type CommandExecutor interface {
-	Execute(ctx context.Context, input *executor.CommandInput) executor.CommandOutput
+	Execute(ctx context.Context, input *shellexecutors.CommandInput) shellexecutors.CommandOutput
 	Name() string
 }
 

@@ -1,4 +1,4 @@
-package models
+package yamlcontracts
 
 type Config struct {
 	DebugPrintOnly bool             `yaml:"debug_print_only,omitempty"`

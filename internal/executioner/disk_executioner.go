@@ -11,12 +11,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/terabiome/infrastructures/internal/executor"
-	"github.com/terabiome/infrastructures/internal/models"
+	yamlcontracts "github.com/terabiome/infrastructures/internal/contracts/yaml"
+	shellexecutors "github.com/terabiome/infrastructures/internal/executors/shell"
 )
 
 type diskExecutioner struct {
-	cfg      models.DiskConfig
+	cfg      yamlcontracts.DiskConfig
 	executor CommandExecutor
 	logger   Logger
 }
@@ -34,11 +34,11 @@ func (e *diskExecutioner) Process(ctx context.Context) error {
 func (e *diskExecutioner) processSwap(ctx context.Context) error {
 	// disable swap
 	if e.cfg.Swap.DisableSwap {
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "swapoff",
 				Arguments:  []string{"-a"},
 			},
@@ -77,11 +77,11 @@ func (e *diskExecutioner) processSwap(ctx context.Context) error {
 	if e.cfg.Swap.MaskSwapRelatedServices {
 		// list the units
 		stdoutBuf := bytes.NewBuffer([]byte{})
-		output := e.executor.Execute(ctx, &executor.CommandInput{
-			Mode:   executor.ModeSync,
+		output := e.executor.Execute(ctx, &shellexecutors.CommandInput{
+			Mode:   shellexecutors.ModeSync,
 			Stdout: stdoutBuf,
 			Stderr: os.Stderr,
-			Command: models.Command{
+			Command: shellexecutors.Command{
 				Executable: "systemctl",
 				Arguments:  []string{"list-units", "--type=swap", "--all", "--no-legend"},
 			},
@@ -108,11 +108,11 @@ func (e *diskExecutioner) processSwap(ctx context.Context) error {
 		}
 		for _, swapUnit := range swapUnits {
 			log.Printf("Masking systemd unit %s\n", swapUnit)
-			output = e.executor.Execute(ctx, &executor.CommandInput{
-				Mode:   executor.ModeSync,
+			output = e.executor.Execute(ctx, &shellexecutors.CommandInput{
+				Mode:   shellexecutors.ModeSync,
 				Stdout: io.Discard, // idc
 				Stderr: os.Stderr,
-				Command: models.Command{
+				Command: shellexecutors.Command{
 					Executable: "systemctl",
 					Arguments:  []string{"mask", swapUnit},
 				},
