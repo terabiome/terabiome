@@ -7,7 +7,7 @@ import (
 	"os"
 
 	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
-	shellexecutors "github.com/terabiome/terabiome/internal/executors/shell"
+	shellexecutors "github.com/terabiome/terabiome/pkg/executors/shell"
 )
 
 type shellExecutioner struct {

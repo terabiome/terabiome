@@ -3,7 +3,7 @@ package executioner
 import (
 	"context"
 
-	shellexecutors "github.com/terabiome/terabiome/internal/executors/shell"
+	shellexecutors "github.com/terabiome/terabiome/pkg/executors/shell"
 )
 
 type CommandExecutor interface {
