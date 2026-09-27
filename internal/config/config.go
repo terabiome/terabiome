@@ -7,14 +7,16 @@ import (
 )
 
 type Config struct {
-	Logger LoggerConfig
+	Logger   LoggerConfig
+	Database DatabaseConfig
 }
 
 var cfg *Config
 
 func New() *Config {
 	cfg := Config{
-		Logger: NewLoggerConfig(),
+		Logger:   NewLoggerConfig(),
+		Database: NewDatabaseConfig(),
 	}
 	return &cfg
 }
