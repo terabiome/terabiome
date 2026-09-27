@@ -23,7 +23,7 @@ const (
 type GenericResponse struct {
 	Message string `json:"message"`
 	Body    any    `json:"body,omitempty"`
-	Error   string `json:"error,omitempty"`
+	Error   error  `json:"error,omitempty"`
 }
 
 // responseCallback is a function type for error handling callbacks
@@ -52,7 +52,7 @@ func ParseBodyAndHandleError(writer http.ResponseWriter, request *http.Request, 
 				WriteResult(writer, http.StatusBadRequest, ContentTypeJSON, GenericResponse{
 					Body:    nil,
 					Message: "invalid request body",
-					Error:   err.Error(),
+					Error:   err,
 				})
 			}, err
 		}
