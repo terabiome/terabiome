@@ -7,7 +7,7 @@ type DatabaseConfig struct {
 
 func NewDatabaseConfig() DatabaseConfig {
 	return DatabaseConfig{
-		DSN:  loadEnv[string]("DB_CONNECTION_STRING", true),
-		Type: loadEnv[string]("DB_CONNECTION_TYPE", true),
+		DSN:  loadEnv[string]("DB_CONNECTION_STRING", false),
+		Type: loadEnv[string]("DB_CONNECTION_TYPE", false),
 	}
 }
