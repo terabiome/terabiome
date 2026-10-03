@@ -15,12 +15,12 @@ var sings *Singletons
 func Init() {
 	log.Println("Constructing singletons")
 
-	logging.InitGlobalLogger(config.Get().Logger)
+	logging.InitGlobalSlogger(config.Get().Logger)
 
 	sings = &Singletons{}
 	// showing off
 
-	logging.Get().Info("Constructed singletons")
+	logging.GetGlobalSlogger().Info("Constructed singletons")
 }
 
 func Get() *Singletons {

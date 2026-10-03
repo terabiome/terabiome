@@ -13,12 +13,13 @@ import (
 
 	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
 	shellexecutors "github.com/terabiome/terabiome/pkg/executors/shell"
+	"github.com/terabiome/terabiome/pkg/logging"
 )
 
 type diskExecutioner struct {
 	cfg      yamlcontracts.DiskConfig
 	executor CommandExecutor
-	logger   Logger
+	logger   logging.Logger
 }
 
 func (e *diskExecutioner) Validate() error {

@@ -8,12 +8,13 @@ import (
 
 	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
 	shellexecutors "github.com/terabiome/terabiome/pkg/executors/shell"
+	"github.com/terabiome/terabiome/pkg/logging"
 )
 
 type shellExecutioner struct {
 	cfg      yamlcontracts.ShellConfig
 	executor CommandExecutor
-	logger   Logger
+	logger   logging.Logger
 }
 
 func (e *shellExecutioner) Validate() error {

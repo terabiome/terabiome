@@ -19,7 +19,7 @@ type osExecutioner struct {
 }
 
 func NewOSExecutioner(executor CommandExecutor, cfg yamlcontracts.OSConfig) *osExecutioner {
-	logger := logging.New(config.Get().Logger, map[string]any{
+	logger := logging.NewSlogger(config.Get().Logger, map[string]any{
 		"scope": "executioner",
 		"name":  "os",
 	})
