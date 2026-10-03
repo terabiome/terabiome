@@ -1,4 +1,4 @@
-package handlershttpapi
+package httphandlers
 
 import (
 	"encoding/json"
