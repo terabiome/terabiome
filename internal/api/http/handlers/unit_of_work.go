@@ -1,16 +1,20 @@
 package handlershttpapi
 
 import (
+	"fmt"
 	"net/http"
 
 	yamlcontracts "github.com/terabiome/terabiome/internal/contracts/yaml"
 )
 
 type UnitOfWork struct {
+	uowService UnitOfWorkService
 }
 
-func NewUnitOfWork() *UnitOfWork {
-	return &UnitOfWork{}
+func NewUnitOfWork(uowService UnitOfWorkService) *UnitOfWork {
+	return &UnitOfWork{
+		uowService: uowService,
+	}
 }
 
 func (h *UnitOfWork) Submit(writer http.ResponseWriter, request *http.Request) {
@@ -21,9 +25,16 @@ func (h *UnitOfWork) Submit(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// TODO: add more logic here
+	ctx := request.Context()
+	if err = h.uowService.Submit(ctx, uowContract); err != nil {
+		WriteResult(writer, http.StatusInternalServerError, ContentTypeJSON, GenericResponse{
+			Message: "submission failed",
+			Error:   fmt.Errorf("failed to submit unit-of-work: %w", err),
+		})
+		return
+	}
+
 	WriteResult(writer, http.StatusCreated, ContentTypeJSON, GenericResponse{
-		Body:    uowContract,
 		Message: "ok",
 	})
 }

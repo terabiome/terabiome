@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	handlershttpapi "github.com/terabiome/terabiome/internal/api/http/handlers"
+	"github.com/terabiome/terabiome/internal/services"
 )
 
 // Router wraps http.ServeMux and provides route setup
@@ -35,7 +36,7 @@ func SetupMux() *Router {
 		writer.Write([]byte("OK"))
 	})
 
-	uowHandlers := handlershttpapi.NewUnitOfWork()
+	uowHandlers := handlershttpapi.NewUnitOfWork(services.NewUnitOfWork())
 	router.ServeMux.Handle("/api/v1/", http.StripPrefix("/api/v1", router.V1Handler(
 		uowHandlers,
 	)))
