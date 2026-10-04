@@ -7,7 +7,7 @@ import (
 )
 
 type OperationEnvironment struct {
-	NodeInfo models.NodeInfo
-	Jounr    *logging.TaskJournaler
-	Executor *shellexecutors.CommandExecutor
+	NodeInfo  models.NodeInfo
+	Journaler *logging.TaskJournaler
+	Executor  *shellexecutors.CommandExecutor
 }
