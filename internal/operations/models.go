@@ -11,3 +11,9 @@ type OperationEnvironment struct {
 	Journaler *writers.Journaler
 	Executor  *shellexecutors.CommandExecutor
 }
+
+type OperationName string
+
+const (
+	OperationNameDemo OperationName = "demo"
+)
