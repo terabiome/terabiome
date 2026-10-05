@@ -1,26 +1,26 @@
-package logging
+package writers
 
 import (
 	"fmt"
 	"time"
 )
 
-type BatchHandler func([]LogEntry)
+type BatchHandler func([]JournalEntry)
 
-type LogEntry struct {
-	TaskUUID  string
-	Timestamp time.Time
-	Source    string
-	Message   string
+type JournalEntry struct {
+	StreamUUID string
+	Timestamp  time.Time
+	Source     string
+	Message    string
 }
 
-type TaskJournalParameters struct {
+type JournalerParameters struct {
 	MaxRecords    int
 	FlushInterval time.Duration
 	BatchFn       BatchHandler
 }
 
-func (p TaskJournalParameters) Validate() error {
+func (p JournalerParameters) Validate() error {
 	if p.MaxRecords < 1 {
 		return fmt.Errorf("max_records must be >= 1")
 	}
@@ -30,26 +30,26 @@ func (p TaskJournalParameters) Validate() error {
 	return nil
 }
 
-type TaskJournalMetadata struct {
-	TaskUUID string
-	Source   string
+type JournalerMetadata struct {
+	StreamUUID string
+	Source     string
 }
 
-type TaskJournaler struct {
+type Journaler struct {
 	doneCh        chan struct{}
-	inputCh       chan LogEntry
+	inputCh       chan JournalEntry
 	batchFn       BatchHandler
 	maxRecords    int
 	flushInterval time.Duration
 }
 
-func NewTaskJournaler(params TaskJournalParameters) (*TaskJournaler, error) {
+func NewJournaler(params JournalerParameters) (*Journaler, error) {
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
-	tj := &TaskJournaler{
+	tj := &Journaler{
 		doneCh:        make(chan struct{}),
-		inputCh:       make(chan LogEntry, 1<<10),
+		inputCh:       make(chan JournalEntry, 1<<10),
 		maxRecords:    params.MaxRecords,
 		flushInterval: params.FlushInterval,
 		batchFn:       params.BatchFn,
@@ -58,11 +58,11 @@ func NewTaskJournaler(params TaskJournalParameters) (*TaskJournaler, error) {
 	return tj, nil
 }
 
-func (t *TaskJournaler) Write(p []byte) (n int, err error) {
+func (t *Journaler) Write(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
-	entry := LogEntry{
+	entry := JournalEntry{
 		Timestamp: time.Now(),
 		Source:    "stream",
 		Message:   string(p),
@@ -75,12 +75,12 @@ func (t *TaskJournaler) Write(p []byte) (n int, err error) {
 	}
 }
 
-func (t *TaskJournaler) Log(msg string, metadata TaskJournalMetadata) {
-	entry := LogEntry{
-		Timestamp: time.Now(),
-		Message:   msg,
-		TaskUUID:  metadata.TaskUUID,
-		Source:    metadata.Source,
+func (t *Journaler) Log(msg string, metadata JournalerMetadata) {
+	entry := JournalEntry{
+		Timestamp:  time.Now(),
+		Message:    msg,
+		StreamUUID: metadata.StreamUUID,
+		Source:     metadata.Source,
 	}
 	select {
 	case t.inputCh <- entry:
@@ -88,13 +88,13 @@ func (t *TaskJournaler) Log(msg string, metadata TaskJournalMetadata) {
 	}
 }
 
-func (t *TaskJournaler) process() {
+func (t *Journaler) process() {
 	defer close(t.doneCh)
 
 	ticker := time.NewTicker(t.flushInterval)
 	defer ticker.Stop()
 
-	buffer := make([]LogEntry, 0, t.maxRecords)
+	buffer := make([]JournalEntry, 0, t.maxRecords)
 
 	for {
 		select {
@@ -120,27 +120,27 @@ func (t *TaskJournaler) process() {
 	}
 }
 
-func (t *TaskJournaler) Close() error {
+func (t *Journaler) Close() error {
 	close(t.inputCh)
 	<-t.doneCh
 	return nil
 }
 
-// TaggerTaskJournaler wraps a TaskJournal and injects a specific source tag.
-type TaggerTaskJournaler struct {
-	logger   *TaskJournaler
-	metadata TaskJournalMetadata
+// TaggerJournaler wraps a Journaler and injects a specific source tag.
+type TaggerJournaler struct {
+	logger   *Journaler
+	metadata JournalerMetadata
 }
 
-func NewTaggerTaskJournaler(logger *TaskJournaler, metadata TaskJournalMetadata) *TaggerTaskJournaler {
-	return &TaggerTaskJournaler{
+func NewTaggerJournaler(logger *Journaler, metadata JournalerMetadata) *TaggerJournaler {
+	return &TaggerJournaler{
 		logger:   logger,
 		metadata: metadata,
 	}
 }
 
 // Write satisfies io.Writer. It delegates to the logger with the pre-defined source.
-func (tw *TaggerTaskJournaler) Write(p []byte) (n int, err error) {
+func (tw *TaggerJournaler) Write(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
