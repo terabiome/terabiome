@@ -8,6 +8,7 @@ const (
 )
 
 type NodeInfo struct {
-	Arch string `json:"arch"`
-	OS   string `json:"os"`
+	MachineID string `json:"machine_id"`
+	Arch      string `json:"arch"`
+	OS        string `json:"os"`
 }
