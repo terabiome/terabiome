@@ -18,9 +18,15 @@ const (
 // UnitOfWork is root of YAML manifest for dispatching works.
 type UnitOfWork struct {
 	Name      string               `yaml:"name" validate:"required,min=3,max=100"`
-	Targets   []string             `yaml:"targets" validate:"required,min=1,dive,required"` // ['*'] means for all available ones
+	Targets   []UnitOfWorkTarget   `yaml:"targets" validate:"required,min=1,dive,required"` // ['*'] means for all available ones
 	Type      UnitOfWorkType       `yaml:"type" validate:"required"`
 	Sequences []UnitOfWorkSequence `yaml:"sequences" validate:"required,min=1,dive"`
+}
+
+// UnitOfWorkTarget serves as filter criteria for node matching.
+type UnitOfWorkTarget struct {
+	Labels map[string]string `yaml:"labels"`
+	IDs    []string          `yaml:"ids"`
 }
 
 // UnitOfWorkSequence is part of UnitOfWork, representing logical grouping of linear execution steps.
